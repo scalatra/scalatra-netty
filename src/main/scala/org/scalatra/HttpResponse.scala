@@ -2,6 +2,9 @@ package org.scalatra
 
 import java.nio.charset.Charset
 import org.jboss.netty.handler.codec.http.HttpResponseStatus
+import collection.mutable
+import mutable.ConcurrentMap
+import com.google.common.collect.MapMaker
 
 object ResponseStatus {
   def apply(nettyStatus: HttpResponseStatus): ResponseStatus = 
@@ -24,12 +27,14 @@ object HttpResponse {
 trait HttpResponse {
 
   import HttpResponse._
-  def headers: Map[String, String]
+  def headers: ConcurrentMap[String, String] = new MapMaker().makeMap[String, String]
   
   
   var status: ResponseStatus = ResponseStatus(HttpResponseStatus.OK)
   def contentType: String 
+  def contentType_=(ct: String)
   def charset: Charset
+  def charset_=(cs: Charset)
 
   def writeln(message: String, charset: Charset = charset) = write(message + NewLine, charset)
   def write(message: String, charset: Charset = charset)

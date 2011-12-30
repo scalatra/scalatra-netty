@@ -13,6 +13,7 @@ class ScalatraRequestHandler(serverInfo: ServerInfo) extends SimpleChannelUpstre
     e.getMessage match {
       case evt: JHttpRequest => {
         val req = new NettyHttpRequest(evt, ensureSlash(serverInfo.base), serverInfo)
+
       }
     }
   }

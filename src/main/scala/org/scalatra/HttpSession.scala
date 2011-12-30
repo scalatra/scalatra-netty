@@ -51,6 +51,6 @@ trait HttpSession extends ConcurrentMap[String, Any] with MapProxyLike[String, A
 }
 
 object InMemorySession extends HttpSessionMeta[InMemorySession] {
-  def empty = new InMemorySession((new MapMaker).makeMap())
+  def empty = new InMemorySession((new MapMaker).makeMap[String, Any])
 }
 class InMemorySession(val self: ConcurrentMap[String, Any]) extends HttpSession
