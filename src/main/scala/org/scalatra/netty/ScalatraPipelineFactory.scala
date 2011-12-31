@@ -2,7 +2,7 @@ package org.scalatra
 package netty
 
 import org.jboss.netty.channel.{Channels, ChannelPipelineFactory}
-import org.jboss.netty.handler.codec.http.{HttpResponseEncoder, HttpChunkAggregator, HttpRequestDecoder}
+import org.jboss.netty.handler.codec.http2.{HttpResponseEncoder, HttpChunkAggregator, HttpRequestDecoder}
 
 
 class ScalatraPipelineFactory(serverInfo: ServerInfo) extends ChannelPipelineFactory {

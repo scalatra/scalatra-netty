@@ -1,12 +1,13 @@
 package org.scalatra
 package netty
 
-import org.jboss.netty.handler.codec.http.HttpHeaders.Names
+import org.jboss.netty.handler.codec.http2.HttpHeaders.Names
 import scalaz.Scalaz._
 import collection.JavaConversions._
 import util.MultiMap
-import org.jboss.netty.buffer.{ChannelBuffers, ChannelBufferInputStream}
-import org.jboss.netty.handler.codec.http.{HttpRequestDecoder, CookieDecoder, Cookie => JCookie, QueryStringDecoder, HttpHeaders, HttpRequest => JHttpRequest, HttpMethod => JHttpMethod}
+import org.jboss.netty.buffer.{ChannelBufferInputStream}
+import org.jboss.netty.handler.codec.http2.{ HttpPostRequestDecoder, CookieDecoder, Cookie => JCookie, QueryStringDecoder, HttpRequest => JHttpRequest, HttpMethod => JHttpMethod}
+import org.jboss.netty.channel.ChannelHandlerContext
 
 private object ParsedUri {
   private val UriParts = """^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?""".r
@@ -31,6 +32,10 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String, val se
   }
   private implicit def nettyCookieToRequestCookie(orig: JCookie) =
     RequestCookie(orig.getName, orig.getValue, CookieOptions(orig.getDomain, orig.getPath, orig.getMaxAge, comment = orig.getComment))
+  private implicit def string2richer(s: String) = new {
+    def some = if (s == null || s.trim.isEmpty) None else Some(s)
+  }
+  
   
   private val queryStringDecoder = new QueryStringDecoder(underlying.getUri)
   private val parsedUri = ParsedUri(underlying.getUri)
@@ -40,7 +45,7 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String, val se
   val path = queryStringDecoder.getPath.replace("^/" + appPath, "")
 
   val headers = {
-    Map((underlying.getHeaders map { e => e.getKey -> e.getValue }):_*)
+    Map((underlying.getHeaders map { e => e.getKey -> e.getValue.some.orNull }):_*)
     
   }
 
@@ -63,7 +68,8 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String, val se
   private def isWsHandshake =
     method == Get && headers.contains(Names.SEC_WEBSOCKET_KEY1) && headers.contains(Names.SEC_WEBSOCKET_KEY2)
 
-  val contentLength = headers.get(Names.CONTENT_LENGTH) some (_.toLong) none { if (isWsHandshake) 8L else 0L }
+  val contentLength =
+    headers.get(Names.CONTENT_LENGTH) flatMap (Option(_)) some (_.toLong) none { if (isWsHandshake) 8L else 0L }
 
   val serverName = serverInfo.name
 
@@ -73,7 +79,16 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String, val se
 
   val inputStream = new ChannelBufferInputStream(underlying.getContent)
 
+  private val postDecoder = new HttpPostRequestDecoder(underlying)
   val parameterMap = {
-    val postDecoder = new HttpRequestDecoder
+    if (!method.allowsBody) {
+      queryString
+    } else {
+      if (postDecoder.isMultipart) {
+
+      }
+    }
   }
+
+  def newResponse(ctx: ChannelHandlerContext) = new NettyHttpResponse(request, ctx)
 }

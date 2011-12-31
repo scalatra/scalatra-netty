@@ -6,8 +6,6 @@ import java.util.concurrent.Executors
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.group.DefaultChannelGroup
-import org.jboss.netty.handler.codec.http.{HttpRequestDecoder, HttpChunkAggregator, HttpResponseEncoder}
-import org.jboss.netty.channel.{ChannelPipelineFactory, Channels}
 import java.net.InetSocketAddress
 
 class NettyServer extends WebServer {

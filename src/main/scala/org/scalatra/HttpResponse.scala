@@ -1,10 +1,12 @@
 package org.scalatra
 
 import java.nio.charset.Charset
-import org.jboss.netty.handler.codec.http.HttpResponseStatus
+import org.jboss.netty.handler.codec.http2.HttpResponseStatus
 import collection.mutable
 import mutable.ConcurrentMap
 import com.google.common.collect.MapMaker
+import org.jboss.netty.buffer.{ChannelBuffers, ChannelBufferOutputStream}
+import java.io.OutputStream
 
 object ResponseStatus {
   def apply(nettyStatus: HttpResponseStatus): ResponseStatus = 
@@ -20,24 +22,22 @@ case class ResponseStatus(code: Int, message: String) {
   }
 }
 
-object HttpResponse {
-  val NewLine = sys.props("line.separator")
-}
-
 trait HttpResponse {
 
-  import HttpResponse._
+
+
   def headers: ConcurrentMap[String, String] = new MapMaker().makeMap[String, String]
-  
-  
-  var status: ResponseStatus = ResponseStatus(HttpResponseStatus.OK)
-  def contentType: String 
+
+  def status: ResponseStatus
+  def status_=(status: ResponseStatus)
+  def contentType: String
   def contentType_=(ct: String)
   def charset: Charset
   def charset_=(cs: Charset)
+  def chunked: Boolean
+  def chunked_=(chunked: Boolean)
 
-  def writeln(message: String, charset: Charset = charset) = write(message + NewLine, charset)
-  def write(message: String, charset: Charset = charset)
-  def write(bytes: Array[Byte])
+  def outputStream: OutputStream
+
   def end()
 }

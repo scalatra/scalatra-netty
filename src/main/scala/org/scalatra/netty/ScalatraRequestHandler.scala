@@ -3,7 +3,7 @@ package netty
 
 import collection.mutable.ConcurrentMap
 import org.jboss.netty.channel.{MessageEvent, ChannelHandlerContext, SimpleChannelUpstreamHandler}
-import org.jboss.netty.handler.codec.http.{QueryStringEncoder, QueryStringDecoder, HttpHeaders, HttpRequest => JHttpRequest, HttpMethod => JHttpMethod}
+import org.jboss.netty.handler.codec.http2.{HttpRequest => JHttpRequest}
 
 /**
  * This handler is akin to the handle method of scalatra

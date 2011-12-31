@@ -2,8 +2,7 @@ package org.scalatra
 package netty
 
 import org.jboss.netty.channel.ChannelHandler.Sharable
-import org.jboss.netty.handler.codec.http.{HttpRequest => JHttpRequest}
-import java.util.concurrent.ConcurrentMap
+import org.jboss.netty.handler.codec.http2.{HttpRequest => JHttpRequest}
 import org.jboss.netty.channel.{MessageEvent, ChannelHandlerContext, SimpleChannelUpstreamHandler}
 
 /**
