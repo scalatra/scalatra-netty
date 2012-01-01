@@ -9,6 +9,7 @@ import org.jboss.netty.buffer.{ChannelBufferInputStream}
 import org.jboss.netty.channel.ChannelHandlerContext
 import org.jboss.netty.handler.codec.http2.{Attribute, HttpPostRequestDecoder, QueryStringDecoder, HttpRequest => JHttpRequest, HttpMethod => JHttpMethod}
 import org.jboss.netty.handler.codec.http.{CookieDecoder, Cookie => JCookie}
+import java.net.URI
 
 private object ParsedUri {
   private val UriParts = """^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?""".r
@@ -19,15 +20,16 @@ private object ParsedUri {
 }
 private case class ParsedUri(scheme: String, authority: String, rawPath: String, queryString: String, fragment: String)
 
-class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String, val serverInfo: ServerInfo) extends HttpRequest {
+class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String)(implicit appContext: AppContext) extends HttpRequest {
 
+  val uri = URI.create(underlying.getUri)
 
   private val queryStringDecoder = new QueryStringDecoder(underlying.getUri)
   private val parsedUri = ParsedUri(underlying.getUri)
   val method: HttpMethod = underlying.getMethod
 
 
-  val path = queryStringDecoder.getPath.replace("^/" + appPath, "")
+  val path = queryStringDecoder.getPath.replace("^" + appPath, "")
 
   val headers = {
     Map((underlying.getHeaders map { e => e.getKey -> e.getValue.blank.orNull }):_*)
@@ -59,9 +61,9 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String, val se
   val contentLength =
     headers get Names.CONTENT_LENGTH flatMap (_.blank some (_.toLong.some) none wsZero)
 
-  val serverName = serverInfo.name
+  val serverName = appContext.server.name
 
-  val serverPort = serverInfo.port
+  val serverPort = appContext.server.port
 
   val serverProtocol = underlying.getProtocolVersion.getText
 

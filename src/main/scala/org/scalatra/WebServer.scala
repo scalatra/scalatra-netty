@@ -23,7 +23,7 @@ trait AppMounter {
   def pathName = EmptyPath
   def path = na("")
   
-  implicit def applications: ApplicationRegistry
+  implicit protected def applications: ApplicationRegistry
 
   def mount(name: String): AppMounter = mount(ServerApp(name, normalizePath(path)))
   def mount(app: AppMounter): AppMounter = mount(app.pathName, app)
@@ -37,9 +37,8 @@ trait AppMounter {
       case (false, false) => "/" + candidate
     }
   }
-  
-  def isDefinedAt(path: String) = applications.isDefinedAt(absolutize(path))
-  
+
+  def hasMatchingRoute(req: HttpRequest) = false
   def applicationOption(path: String) = applications get na(path)
   def apply(path: String) = applications(na(path))
   def apply(path: URI) = applications(na(path.getRawPath))
@@ -54,14 +53,14 @@ trait WebServer extends AppMounter {
   def name: String
   def version: String
   def port: Int
+  def info = ServerInfo(name, version, port, normalizePath(path))
+
+  implicit protected val applications = AppMounter.newAppRegistry
+  implicit lazy val appContext = DefaultAppContext(info)
 
   protected lazy val started = new Switch
   def start()
   def stop()
 
-
-  implicit val applications = AppMounter.newAppRegistry
-
-  def info = ServerInfo(name, version, port, normalizePath(path))
 
 }

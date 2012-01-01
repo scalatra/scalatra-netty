@@ -4,6 +4,7 @@ import scala.collection.Map
 import scala.collection.mutable
 import java.io.{PrintWriter, InputStream}
 import util.MultiMap
+import java.net.URI
 
 /**
  * A representation of an HTTP request. Based on the Rack specification and Python WSGI (PEP 333).
@@ -13,6 +14,8 @@ trait HttpRequest {
    * The HTTP request method, such as GET or POST
    */
   def method: HttpMethod
+
+  def uri: URI
 
   /**
    * The initial portion of the request URL's "path" that corresponds to the application object, so that the

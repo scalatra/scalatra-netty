@@ -6,6 +6,7 @@ import annotation.tailrec
 import util._
 import scala.io.Codec
 import io._
+import scala.util.DynamicVariable
 
 trait MultiParamsDef {
   type MultiParams <: Map[String, _ <: Seq[String]]
@@ -35,7 +36,21 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
    */
   def name = getClass.getName
 
-  protected lazy val routes: RouteRegistry = new RouteRegistry
+  protected val routes: RouteRegistry = new RouteRegistry
+
+  override def hasMatchingRoute(req: HttpRequest) = {
+    Console.println("The route registry")
+    Console.println(routes)
+    _request.withValue(req) {
+      val mm = routes.matchingMethods
+      val actual = mm flatMap (routes(_))
+      Console.println("The registered routes")
+      Console.println(actual)
+      actual.filter(_().isDefined).nonEmpty
+    }
+  }
+  
+  implicit def applications = appContext.applications
 
 
   /**
@@ -56,6 +71,7 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
    * $ 4. Executes the after filters with `runFilters`.
    * $ 5. The action result is passed to `renderResponse`.
    */
+
   protected def executeRoutes() = {
     val result = try {
       runFilters(routes.beforeFilters)
@@ -113,11 +129,6 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
       }
     }
 
-  /**
-   * The effective path against which routes are matched.  The definition
-   * varies between servlets and filters.
-   */
-  def requestPath: String
 
   def before(transformers: RouteTransformer*)(fun: => Any) =
     routes.appendBeforeFilter(Route(transformers, () => fun))
@@ -125,11 +136,6 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
   def after(transformers: RouteTransformer*)(fun: => Any) =
     routes.appendAfterFilter(Route(transformers, () => fun))
 
-  /**
-   * Called if no route matches the current request for any method.  The
-   * default implementation varies between servlet and filter.
-   */
-  protected var doNotFound: Action
   def notFound(fun: => Any) = doNotFound = { () => fun }
 
   /**
@@ -366,4 +372,43 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
   protected def removeRoute(method: String, route: Route): Unit =
     removeRoute(HttpMethod(method), route)
 
+  override var pathName = ""
+
+  /**
+   * The effective path against which routes are matched.  The definition
+   * varies between servlets and filters.
+   */
+  def requestPath = request.path
+
+  /**
+   * Called if no route matches the current request for any method.  The
+   * default implementation varies between servlet and filter.
+   */
+  protected var doNotFound: org.scalatra.ScalatraApp.Action = () => {
+    response.status = 404
+    response.end()
+  }
+
+  private val _request = new DynamicVariable[HttpRequest](null)
+  private val _response = new DynamicVariable[HttpResponse](null)
+  implicit def request = _request.value
+
+  implicit def response = _response.value
+
+  def apply(req: HttpRequest, res: HttpResponse) {
+    _request.withValue(req) {
+      _response.withValue(res) {
+//            // As default, the servlet tries to decode params with ISO_8859-1.
+//            // It causes an EOFException if params are actually encoded with the other code (such as UTF-8)
+//            if (request. == null)
+//              request.setCharacterEncoding(defaultCharacterEncoding)
+
+        val realMultiParams = request.parameterMap
+        //response.charset(defaultCharacterEncoding)
+        request(org.scalatra.ScalatraApp.MultiParamsKey) = realMultiParams
+        executeRoutes()
+        response.end()
+      }
+    }
+  }
 }

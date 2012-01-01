@@ -27,7 +27,7 @@ case class Route(
     routeParams map (MatchedRoute(action, _))
   }
 
-  private def initialParams = None.asInstanceOf[Option[MultiParams]] 
+  private def initialParams = None.asInstanceOf[Option[MultiParams]]
   private def routeParams = (initialParams /: routeMatchers) { (acc, matchRoute) => (acc, matchRoute()) match {
     case (None, None) => None
     case (None, Some(mm: MultiParams)) => Some(mm)

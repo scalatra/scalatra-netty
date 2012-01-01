@@ -22,7 +22,7 @@ class NettyServer extends WebServer {
 
   val allChannels = new DefaultChannelGroup()
 
-  def channelFactory = new ScalatraPipelineFactory()(DefaultAppContext(info))
+  def channelFactory = new ScalatraPipelineFactory()
   
   def start() = started switchOn {
     bootstrap.bind(new InetSocketAddress(port))

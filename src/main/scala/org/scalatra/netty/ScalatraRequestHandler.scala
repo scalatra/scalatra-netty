@@ -16,16 +16,16 @@ class ScalatraRequestHandler(implicit val appContext: AppContext) extends Simple
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     e.getMessage match {
       case evt: JHttpRequest => {
-        val req = new NettyHttpRequest(evt, ensureSlash(appContext.server.base), appContext.server)
+        val req = new NettyHttpRequest(evt, ensureSlash(appContext.server.base))
         val resp = req newResponse ctx
-        val app = new ScalatraApp(appContext.server.base) {
-          get("/hello") { "world" }
-          get("/") { "OMG it works!" }
+        val app = appContext.application(req)
+        if (app.isDefined) {
+          app.get(req, resp)
+        } else {
+          Console.println("Couldn't match the request")
+          val resp = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
+          ctx.getChannel.write(resp).addListener(ChannelFutureListener.CLOSE)
         }
-        app(req, resp)
-        // select app from mounted applications
-        // chop off base path
-        // handle the request
       }
     }
 
@@ -34,11 +34,18 @@ class ScalatraRequestHandler(implicit val appContext: AppContext) extends Simple
 
 
   override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) {
-    Console.err.println(e.getCause.getMessage)
-    Console.err.println(e.getCause.getStackTraceString)
-    val resp = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR)
-    resp.setContent(ChannelBuffers.copiedBuffer((e.getCause.getMessage + "\n" + e.getCause.getStackTraceString).getBytes(Codec.UTF8)))
-    ctx.getChannel.write(resp).addListener(ChannelFutureListener.CLOSE)
+    try {
+      Console.err.println(e.getCause.getMessage)
+      Console.err.println(e.getCause.getStackTraceString)
+      val resp = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR)
+      resp.setContent(ChannelBuffers.copiedBuffer((e.getCause.getMessage + "\n" + e.getCause.getStackTraceString).getBytes(Codec.UTF8)))
+      ctx.getChannel.write(resp).addListener(ChannelFutureListener.CLOSE)
+    } catch {
+      case _ => {
+        Console.err.println("Error during error handling")
+        //ctx.getChannel.close().await()
+      }
+    }
   }
 
   private def ensureSlash(value: String) = if (value startsWith "/") value else "/" + value

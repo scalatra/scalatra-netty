@@ -170,7 +170,11 @@ final class RailsRouteMatcher(pattern: String, requestPath: => String)
 final class PathPatternRouteMatcher(pattern: PathPattern, requestPath: => String)
   extends RouteMatcher {
 
-  def apply() = pattern(requestPath)
+  def apply() = {
+    println("The requestPath: %s and the pattern: %s" format (requestPath, pattern.regex.toString()))
+    pattern(requestPath)
+  }
+    
 
   override def toString = pattern.regex.toString
 }
@@ -188,10 +192,13 @@ final class RegexRouteMatcher(regex: Regex, requestPath: => String)
    * @return If the regex matches the request path, returns a list of all
    * captured groups in a "captures" variable.  Otherwise, returns None.
    */
-  def apply() = regex.findFirstMatchIn(requestPath) map { _.subgroups match {
-    case Nil => MultiMap()
-    case xs => Map("captures" -> xs)
-  }}
+  def apply() = {
+    println("the request path: %s and the regex: %s".format(requestPath, regex.pattern.toString))
+    regex.findFirstMatchIn(requestPath) map { _.subgroups match {
+      case Nil => MultiMap()
+      case xs => Map("captures" -> xs)
+    }}
+  }
 
   override def toString = regex.toString
 }
