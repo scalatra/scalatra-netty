@@ -27,7 +27,12 @@ trait AppMounter {
 
   def mount(name: String): AppMounter = mount(ServerApp(name, normalizePath(path)))
   def mount(app: AppMounter): AppMounter = mount(app.pathName, app)
-  def mount(name: String, app: AppMounter): AppMounter = { applications += normalizePath(path / name) -> app; app }
+  def mount(name: String, app: AppMounter): AppMounter = {
+    val normalizedPath = normalizePath(path / name)
+    println("Registering an app to: %s" format normalizedPath)
+    applications += normalizedPath -> app
+    app
+  }
 
   private def ensureSlash(candidate: String) = {
     (candidate.startsWith("/"), candidate.endsWith("/")) match {
