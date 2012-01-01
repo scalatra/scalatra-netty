@@ -24,16 +24,24 @@ case class Route(
    * returned.
    */
   def apply(): Option[MatchedRoute] = {
-    routeParams map (MatchedRoute(action, _))
+    routeMatchers.foldLeft(Option(MultiMap())) {
+      (acc: Option[MultiParams], routeMatcher: RouteMatcher) => for {
+        routeParams <- acc
+        matcherParams <- routeMatcher()
+      } yield routeParams ++ matcherParams
+    } map { routeParams => MatchedRoute(action, routeParams) }
   }
-
-  private def initialParams = None.asInstanceOf[Option[MultiParams]]
-  private def routeParams = (initialParams /: routeMatchers) { (acc, matchRoute) => (acc, matchRoute()) match {
-    case (None, None) => None
-    case (None, Some(mm: MultiParams)) => Some(mm)
-    case (r, None) => r
-    case (Some(p), Some(mm: MultiParams)) => Some(p ++ mm)
-  } }
+//  def apply(): Option[MatchedRoute] = {
+//    routeParams map (MatchedRoute(action, _))
+//  }
+//
+//  private def initialParams = None.asInstanceOf[Option[MultiParams]]
+//  private def routeParams = (initialParams /: routeMatchers) { (acc, matchRoute) => (acc, matchRoute()) match {
+//    case (None, None) => None
+//    case (None, Some(mm: MultiParams)) => Some(mm)
+//    case (r, None) => r
+//    case (Some(p), Some(mm: MultiParams)) => Some(p ++ mm)
+//  } }
 
   /**
    * The reversible matcher of a route is the first reversible matcher, if

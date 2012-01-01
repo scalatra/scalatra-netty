@@ -24,7 +24,6 @@ object ScalatraApp extends MultiParamsDef {
 
 trait NamedPathApp { self: AppMounter =>
   def pathName: String
-  def pathName_=(value: String)
 }
 
 trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
@@ -42,6 +41,7 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
     Console.println("The route registry")
     Console.println(routes)
     _request.withValue(req) {
+      Console.println("Trying to match: %s" format requestPath)
       val mm = routes.matchingMethods
       val actual = mm flatMap (routes(_))
       Console.println("The registered routes")
@@ -350,6 +350,7 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
    * @see org.scalatra.ScalatraKernel#removeRoute
    */
   protected def addRoute(method: HttpMethod, transformers: Seq[RouteTransformer], action: => Any): Route = {
+    println("Adding a route with context path: " + path)
     val route = Route(transformers, () => action, () => path)
     routes.prependRoute(method, route)
     route
@@ -372,13 +373,13 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
   protected def removeRoute(method: String, route: Route): Unit =
     removeRoute(HttpMethod(method), route)
 
-  override var pathName = ""
-
   /**
    * The effective path against which routes are matched.  The definition
    * varies between servlets and filters.
    */
-  def requestPath = request.path
+  def requestPath = {
+    request.path.replace(path, "")
+  }
 
   /**
    * Called if no route matches the current request for any method.  The

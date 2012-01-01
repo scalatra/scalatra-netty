@@ -18,26 +18,21 @@ trait AppContext {
     Console.println("The registered applications:")
     Console.println(applications)
     val path = req.uri.getPath
-    Console.println("The path: " + path)
     val parts = path.split("/")
-    Console.println("This has %d parts" format parts.length)
     val found = if (parts.length == 0) applications get "/"
       else {
         var i = 1
         var curr = "" / parts(i)
         Console.println("The current path: %s" format curr)
-        var next: Option[AppMounter] = applications get parts(i)
-        Console.println("Next is defined: %s" format next.isDefined)
+        var next: Option[AppMounter] = applications get curr
         var app: Option[AppMounter] = applications get "/"
-        Console.println("App is defined: %s" format app.isDefined)
-        while (app.isDefined && next.isDefined && (i + 1) < parts.length) {
-          curr = curr / parts(i)
-          Console.println("The current path: %s" format curr)
-          app = next
-          next = applications get parts(i + 1)
-          Console.println("Next is defined: %s" format next.isDefined)
-          Console.println("App is defined: %s" format app.isDefined)
+        while (app.isDefined && next.isDefined) {
           i += 1
+          app = next
+          next = if((i) < parts.length) {
+            curr = curr / parts(i)
+            applications get curr
+          } else None
         }
         app
       }
