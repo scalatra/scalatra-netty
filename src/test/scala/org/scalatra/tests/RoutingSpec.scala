@@ -3,7 +3,7 @@ package org.scalatra.tests
 import org.scalatra.AppContext
 
 
-class TestScalatraApp(ctxt: AppContext, base: String = "/") extends org.scalatra.netty.ScalatraApp(ctxt, base) {
+class TestScalatraApp(base: String = "/")(implicit ctxt: AppContext) extends org.scalatra.netty.ScalatraApp(base) {
 
   get("/") {
     "OMG! It works!!!"

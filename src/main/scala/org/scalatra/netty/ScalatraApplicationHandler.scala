@@ -9,7 +9,7 @@ import org.jboss.netty.channel.{MessageEvent, ChannelHandlerContext, SimpleChann
  * This handler is shared across the entire server, providing application level settings
  */
 @Sharable
-class ScalatraApplicationHandler(serverInfo: ServerInfo) extends SimpleChannelUpstreamHandler {
+class ScalatraApplicationHandler(implicit val appContext: AppContext) extends SimpleChannelUpstreamHandler {
 
 //  private val sessions = new InMemorySessionStore()
 //

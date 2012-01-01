@@ -4,7 +4,11 @@ package netty
 import java.io.File
 import scala.util.DynamicVariable
 
-class ScalatraApp(val appContext: AppContext, val routeBasePath: String = "/") extends org.scalatra.ScalatraApp {
+class ScalatraApp(override val basePath: String = "/")(implicit val appContext: AppContext) extends org.scalatra.ScalatraApp {
+
+  implicit val applications = appContext.applications
+
+  override var pathName = ""
   def requestPath = request.path
 
   protected var doNotFound: org.scalatra.ScalatraApp.Action = () => {

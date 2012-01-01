@@ -21,7 +21,12 @@ object ScalatraApp extends MultiParamsDef {
   val MultiParamsKey = "org.scalatra.MultiParams".intern
 }
 
-trait ScalatraApp extends CoreDsl with Mountable with Mounting {
+trait NamedPathApp { self: Mounting =>
+  def pathName: String
+  def pathName_=(value: String)
+}
+
+trait ScalatraApp extends CoreDsl with Mounting with NamedPathApp {
 
 
   import ScalatraApp._
@@ -339,7 +344,7 @@ trait ScalatraApp extends CoreDsl with Mountable with Mounting {
    * @see org.scalatra.ScalatraKernel#removeRoute
    */
   protected def addRoute(method: HttpMethod, transformers: Seq[RouteTransformer], action: => Any): Route = {
-    val route = Route(transformers, () => action, () => routeBasePath)
+    val route = Route(transformers, () => action, () => path)
     routes.prependRoute(method, route)
     route
   }
@@ -347,7 +352,7 @@ trait ScalatraApp extends CoreDsl with Mountable with Mounting {
   /**
    * The base path for URL generation
    */
-  protected def routeBasePath: String
+  protected def path: String
 
   /**
    * Removes _all_ the actions of a given route for a given HTTP method.

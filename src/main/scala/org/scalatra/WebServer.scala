@@ -8,13 +8,18 @@ import com.google.common.collect.MapMaker
 object Mounting {
   type ApplicationRegistry = ConcurrentMap[String, Mounting]
   def newAppRegistry: ApplicationRegistry = new MapMaker().makeMap[String, Mounting]
+  val EmptyPath = ""
 }
 trait Mounting {
   import Mounting._
   def basePath = "/"
-  var name = ""
-  def path = normalizePath(basePath / name)
-  def mount(app: Mounting): Mounting = { applications += path -> app; app }
+  def pathName = EmptyPath
+  def path = normalizePath(basePath / pathName)
+  implicit def applications: ApplicationRegistry
+
+  def mount(name: String): Mounting = mount(ServerApp(name, normalizePath(path)))
+  def mount(app: Mounting): Mounting = mount(app.pathName, app)
+  def mount(name: String, app: Mounting): Mounting = { applications += normalizePath(path / name) -> app; app }
 
   private def ensureSlash(candidate: String) = {
     (candidate.startsWith("/"), candidate.endsWith("/")) match {
@@ -29,11 +34,12 @@ trait Mounting {
   
 }
 
-case class ServerApp(name: String,  basePath: String = "/")(implicit applications: Mounting.ApplicationRegistry) extends Mounting
+case class ServerApp(override val pathName: String, override val basePath: String = "/")(implicit val applications: Mounting.ApplicationRegistry) extends Mounting
 
 case class ServerInfo(name: String, version: String, port: Int, base: String)
 trait WebServer extends Mounting {
-  
+
+  def name: String
   def version: String
   def port: Int
 
@@ -44,8 +50,6 @@ trait WebServer extends Mounting {
 
   implicit val applications = Mounting.newAppRegistry
 
-  def mount(name: String): Mounting = mount(ServerApp(name, normalizePath(basePath)))
-  
-  def info = ServerInfo(name, version, port, base)
+  def info = ServerInfo(name, version, port, normalizePath(path))
 
 }

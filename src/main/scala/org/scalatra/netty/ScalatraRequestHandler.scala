@@ -12,13 +12,13 @@ import scala.io.Codec
 /**
  * This handler is akin to the handle method of scalatra
  */
-class ScalatraRequestHandler(serverInfo: ServerInfo) extends SimpleChannelUpstreamHandler {
+class ScalatraRequestHandler(implicit val appContext: AppContext) extends SimpleChannelUpstreamHandler {
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     e.getMessage match {
       case evt: JHttpRequest => {
-        val req = new NettyHttpRequest(evt, ensureSlash(serverInfo.base), serverInfo)
+        val req = new NettyHttpRequest(evt, ensureSlash(appContext.server.base), appContext.server)
         val resp = req newResponse ctx
-        val app = new ScalatraApp(new AppContext {}) {
+        val app = new ScalatraApp(appContext.server.base) {
           get("/hello") { "world" }
           get("/") { "OMG it works!" }
         }
