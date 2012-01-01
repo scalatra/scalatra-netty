@@ -38,5 +38,4 @@ class NettyServer extends WebServer {
     bossThreadPool.shutdown()
   }
 
-  def mount(name: String, app: Mountable) = null
 }

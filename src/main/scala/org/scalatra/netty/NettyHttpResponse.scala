@@ -2,11 +2,11 @@ package org.scalatra
 package netty
 
 import io.Codec
-import org.jboss.netty.handler.codec.http2.{HttpHeaders, DefaultHttpResponse, HttpResponseStatus, HttpVersion, HttpResponse => JHttpResponse}
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names
 import scalaz.Scalaz._
 import org.jboss.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
 import org.jboss.netty.buffer.{ChannelBuffers, ChannelBufferOutputStream}
+import org.jboss.netty.handler.codec.http2.{HttpHeaders, DefaultHttpResponse, HttpResponseStatus}
 
 class NettyHttpResponse(request: NettyHttpRequest, connection: ChannelHandlerContext) extends HttpResponse {
   
@@ -29,8 +29,7 @@ class NettyHttpResponse(request: NettyHttpRequest, connection: ChannelHandlerCon
     headers foreach { case (k, v) => underlying.addHeader(k, v) }
     underlying.setContent(outputStream.buffer())
     val fut = connection.getChannel.write(underlying)
-//    if (!HttpHeaders.isKeepAlive(request.underlying)) fut.addListener(ChannelFutureListener.CLOSE)
-    fut.addListener(ChannelFutureListener.CLOSE)
+    if (!chunked) fut.addListener(ChannelFutureListener.CLOSE)
   }
 
   def chunked = underlying.isChunked

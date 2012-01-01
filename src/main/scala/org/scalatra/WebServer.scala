@@ -2,25 +2,36 @@ package org.scalatra
 
 import akka.util.Switch
 import collection.mutable.ConcurrentMap
-import com.google.common.collect.MapMaker
 import collection.JavaConversions._
+import com.google.common.collect.MapMaker
 
-trait Mountable
-
+object Mounting {
+  type ApplicationRegistry = ConcurrentMap[String, Mounting]
+  def newAppRegistry: ApplicationRegistry = new MapMaker().makeMap[String, Mounting]
+}
 trait Mounting {
-  def base = "/"
-  def path = base + name
-  def name: String
+  import Mounting._
+  def basePath = "/"
+  var name = ""
+  def path = normalizePath(basePath / name)
+  def mount(app: Mounting): Mounting = { applications += path -> app; app }
 
-  def mount(name: String, app: Mountable)
-  lazy val applications: ConcurrentMap[String, Mountable] = new MapMaker().makeMap[String, Mountable]
+  private def ensureSlash(candidate: String) = {
+    (candidate.startsWith("/"), candidate.endsWith("/")) match {
+      case (true, true) => candidate.dropRight(1)
+      case (true, false) => candidate
+      case (false, true) => "/" + candidate.dropRight(1)
+      case (false, false) => "/" + candidate
+    }
+  }
+  
+  def normalizePath(pth: String) = ensureSlash(if (pth.endsWith("/")) pth.dropRight(1) else pth)
+  
 }
 
-trait SubApp extends Mountable with Mounting {
+case class ServerApp(name: String,  basePath: String = "/")(implicit applications: Mounting.ApplicationRegistry) extends Mounting
 
-}
-
-case class ServerInfo(name: String, version: String, port: Int, base: String, applications: ConcurrentMap[String, Mountable])
+case class ServerInfo(name: String, version: String, port: Int, base: String)
 trait WebServer extends Mounting {
   
   def version: String
@@ -29,10 +40,12 @@ trait WebServer extends Mounting {
   protected lazy val started = new Switch
   def start()
   def stop()
+
+
+  implicit val applications = Mounting.newAppRegistry
+
+  def mount(name: String): Mounting = mount(ServerApp(name, normalizePath(basePath)))
   
-  
-  def mount(name: String, app: Mountable)
-  
-  def info = ServerInfo(name, version, port, base, applications)
+  def info = ServerInfo(name, version, port, base)
 
 }

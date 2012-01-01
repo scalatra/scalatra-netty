@@ -18,6 +18,12 @@ package object scalatra extends Control {
     def blank = if (isBlank) None else Some(s)
     def isBlank = s == null || s.trim.isEmpty
     def nonBlank = s != null || s.trim.nonEmpty
+
+    def /(path: String) = (s.endsWith("/"), path.startsWith("/")) match {
+      case (true, false) | (false, true) ⇒ s + path
+      case (false, false)                ⇒ s + "/" + path
+      case (true, true)                  ⇒ s + path substring 1
+    }
   }
   
   implicit def int2StatusCode(code: Int) = code match {

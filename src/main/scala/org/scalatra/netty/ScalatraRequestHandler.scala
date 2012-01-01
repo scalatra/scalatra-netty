@@ -18,43 +18,11 @@ class ScalatraRequestHandler(serverInfo: ServerInfo) extends SimpleChannelUpstre
       case evt: JHttpRequest => {
         val req = new NettyHttpRequest(evt, ensureSlash(serverInfo.base), serverInfo)
         val resp = req newResponse ctx
-        val app = new ScalatraApp {
-          val requestPath = req.path
-
-          protected var doNotFound: ScalatraApp.Action = { () =>
-            resp.status = 404
-            resp.end()
-          }
-
-          protected def renderStaticFile(file: File) {}
-
-          protected val routeBasePath = "/"
-
-          implicit val appContext = new AppContext {
-
-          }
-
-          implicit val request = req
-
-          implicit val response = resp
-
-          def apply() {
-//            // As default, the servlet tries to decode params with ISO_8859-1.
-//            // It causes an EOFException if params are actually encoded with the other code (such as UTF-8)
-//            if (request. == null)
-//              request.setCharacterEncoding(defaultCharacterEncoding)
-
-            val realMultiParams = request.parameterMap
-            //response.charset(defaultCharacterEncoding)
-            request(ScalatraApp.MultiParamsKey) = realMultiParams
-            executeRoutes()
-            response.end()
-          }
-
+        val app = new ScalatraApp(new AppContext {}) {
           get("/hello") { "world" }
           get("/") { "OMG it works!" }
         }
-        app()
+        app(req, resp)
         // select app from mounted applications
         // chop off base path
         // handle the request

@@ -21,11 +21,15 @@ object ScalatraApp extends MultiParamsDef {
   val MultiParamsKey = "org.scalatra.MultiParams".intern
 }
 
-trait ScalatraApp extends CoreDsl with Mountable {
+trait ScalatraApp extends CoreDsl with Mountable with Mounting {
+
+
   import ScalatraApp._
   /**
    * The routes registered in this kernel.
    */
+  def name = getClass.getName
+
   protected lazy val routes: RouteRegistry = new RouteRegistry
 
 

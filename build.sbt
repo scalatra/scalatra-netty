@@ -10,7 +10,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" % "akka-actor" % "2.0-M1" % "provided;runtime",
   "org.jboss.netty" % "netty" % "3.2.7.Final",
   "org.scalaz" %% "scalaz-core" % "6.0.3",
-  "com.google.guava" % "guava" % "10.0.1"
+  "com.google.guava" % "guava" % "10.0.1",
+  "org.specs2" %% "specs2" % "1.6.1"
 )
 
 seq(AkkaKernelPlugin.distSettings :_*)
