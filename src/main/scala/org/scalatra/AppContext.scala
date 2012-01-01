@@ -6,7 +6,7 @@ import collection.JavaConversions._
 
 trait AppContext {
 
-  implicit def applications: Mounting.ApplicationRegistry
+  implicit def applications: AppMounter.ApplicationRegistry
   def server: ServerInfo
   lazy val attributes: ConcurrentMap[String, Any] = new MapMaker().makeMap[String, Any]() 
   
@@ -18,4 +18,4 @@ trait AppContext {
 
 }
 
-case class DefaultAppContext(server: ServerInfo)(implicit val applications: Mounting.ApplicationRegistry) extends AppContext
+case class DefaultAppContext(server: ServerInfo)(implicit val applications: AppMounter.ApplicationRegistry) extends AppContext

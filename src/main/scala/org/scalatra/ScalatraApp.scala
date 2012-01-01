@@ -21,12 +21,12 @@ object ScalatraApp extends MultiParamsDef {
   val MultiParamsKey = "org.scalatra.MultiParams".intern
 }
 
-trait NamedPathApp { self: Mounting =>
+trait NamedPathApp { self: AppMounter =>
   def pathName: String
   def pathName_=(value: String)
 }
 
-trait ScalatraApp extends CoreDsl with Mounting with NamedPathApp {
+trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
 
 
   import ScalatraApp._

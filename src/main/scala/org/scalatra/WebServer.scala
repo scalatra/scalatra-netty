@@ -4,22 +4,30 @@ import akka.util.Switch
 import collection.mutable.ConcurrentMap
 import collection.JavaConversions._
 import com.google.common.collect.MapMaker
+import java.net.URI
 
-object Mounting {
-  type ApplicationRegistry = ConcurrentMap[String, Mounting]
-  def newAppRegistry: ApplicationRegistry = new MapMaker().makeMap[String, Mounting]
+object AppMounter {
+  type ApplicationRegistry = ConcurrentMap[String, AppMounter]
+  def newAppRegistry: ApplicationRegistry = new MapMaker().makeMap[String, AppMounter]
   val EmptyPath = ""
 }
-trait Mounting {
-  import Mounting._
+trait AppMounter {
+  import AppMounter._
+  
+  private def absolutize(path: String) = normalizePath(if (path.startsWith("/")) path else basePath / pathName / path)
+  private[scalatra] def normalizePath(pth: String) = ensureSlash(if (pth.endsWith("/")) pth.dropRight(1) else pth)
+  
+  private val na = normalizePath _ compose absolutize _
+  
   def basePath = "/"
   def pathName = EmptyPath
-  def path = normalizePath(basePath / pathName)
+  def path = na("")
+  
   implicit def applications: ApplicationRegistry
 
-  def mount(name: String): Mounting = mount(ServerApp(name, normalizePath(path)))
-  def mount(app: Mounting): Mounting = mount(app.pathName, app)
-  def mount(name: String, app: Mounting): Mounting = { applications += normalizePath(path / name) -> app; app }
+  def mount(name: String): AppMounter = mount(ServerApp(name, normalizePath(path)))
+  def mount(app: AppMounter): AppMounter = mount(app.pathName, app)
+  def mount(name: String, app: AppMounter): AppMounter = { applications += normalizePath(path / name) -> app; app }
 
   private def ensureSlash(candidate: String) = {
     (candidate.startsWith("/"), candidate.endsWith("/")) match {
@@ -30,14 +38,18 @@ trait Mounting {
     }
   }
   
-  def normalizePath(pth: String) = ensureSlash(if (pth.endsWith("/")) pth.dropRight(1) else pth)
+  def isDefinedAt(path: String) = applications.isDefinedAt(absolutize(path))
   
+  def applicationOption(path: String) = applications get na(path)
+  def apply(path: String) = applications(na(path))
+  def apply(path: URI) = applications(na(path.getRawPath))
+  def unapply(path: String) = applicationOption(path)
 }
 
-case class ServerApp(override val pathName: String, override val basePath: String = "/")(implicit val applications: Mounting.ApplicationRegistry) extends Mounting
+case class ServerApp(override val pathName: String, override val basePath: String = "/")(implicit val applications: AppMounter.ApplicationRegistry) extends AppMounter
 
 case class ServerInfo(name: String, version: String, port: Int, base: String)
-trait WebServer extends Mounting {
+trait WebServer extends AppMounter {
 
   def name: String
   def version: String
@@ -48,7 +60,7 @@ trait WebServer extends Mounting {
   def stop()
 
 
-  implicit val applications = Mounting.newAppRegistry
+  implicit val applications = AppMounter.newAppRegistry
 
   def info = ServerInfo(name, version, port, normalizePath(path))
 
