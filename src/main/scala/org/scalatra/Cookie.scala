@@ -33,11 +33,11 @@ trait HttpCookie {
       sb.append("; Domain=").append(ensureDotDomain.toLowerCase(Locale.ENGLISH))
 
     val pth = cookieOptions.path
-    if(pth.isNonBlank) sb append "; Path=" append (if(!pth.startsWith("/")) {
+    if(pth.nonBlank) sb append "; Path=" append (if(!pth.startsWith("/")) {
       "/" + pth
     } else { pth })
 
-    if(cookieOptions.comment.isNonBlank) sb append ("; Comment=") append cookieOptions.comment
+    if(cookieOptions.comment.nonBlank) sb append ("; Comment=") append cookieOptions.comment
 
     if(cookieOptions.maxAge > -1) sb append "; Max-Age=" append cookieOptions.maxAge
 
@@ -49,7 +49,7 @@ trait HttpCookie {
 }
 
 case class RequestCookie(name: String, value: String, cookieOptions: CookieOptions = CookieOptions()) extends HttpCookie
-case class Cookie(name: String, value: String)(implicit cookieOptions: CookieOptions = CookieOptions()) extends HttpCookie
+case class Cookie(name: String, value: String)(implicit val cookieOptions: CookieOptions = CookieOptions()) extends HttpCookie
 
 class CookieJar(private val reqCookies: Map[String, RequestCookie]) {
   private lazy val cookies = mutable.HashMap[String, HttpCookie]() ++ reqCookies
@@ -59,7 +59,7 @@ class CookieJar(private val reqCookies: Map[String, RequestCookie]) {
   def apply(key: String) = get(key) getOrElse (throw new Exception("No cookie could be found for the specified key [%s]" format key))
 
   def update(name: String, value: String)(implicit cookieOptions: CookieOptions=CookieOptions()) = {
-    cookies += name -> value
+    cookies += name -> Cookie(name, value)
     // TODO: actually add cookie to response
   }
 

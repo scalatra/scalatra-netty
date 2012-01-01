@@ -6,8 +6,9 @@ import scalaz.Scalaz._
 import collection.JavaConversions._
 import util.MultiMap
 import org.jboss.netty.buffer.{ChannelBufferInputStream}
-import org.jboss.netty.handler.codec.http2.{ HttpPostRequestDecoder, CookieDecoder, Cookie => JCookie, QueryStringDecoder, HttpRequest => JHttpRequest, HttpMethod => JHttpMethod}
 import org.jboss.netty.channel.ChannelHandlerContext
+import org.jboss.netty.handler.codec.http2.{Attribute, HttpPostRequestDecoder, QueryStringDecoder, HttpRequest => JHttpRequest, HttpMethod => JHttpMethod}
+import org.jboss.netty.handler.codec.http.{CookieDecoder, Cookie => JCookie}
 
 private object ParsedUri {
   private val UriParts = """^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?""".r
@@ -19,24 +20,8 @@ private object ParsedUri {
 private case class ParsedUri(scheme: String, authority: String, rawPath: String, queryString: String, fragment: String)
 
 class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String, val serverInfo: ServerInfo) extends HttpRequest {
-  private implicit def jHttpMethod2HttpMethod(orig: JHttpMethod): HttpMethod = orig match {
-    case JHttpMethod.CONNECT => Connect
-    case JHttpMethod.DELETE => Delete
-    case JHttpMethod.GET => Get
-    case JHttpMethod.HEAD => Head
-    case JHttpMethod.OPTIONS => Options
-    case JHttpMethod.PATCH => Patch
-    case JHttpMethod.POST => Post
-    case JHttpMethod.PUT => Put
-    case JHttpMethod.TRACE => Trace
-  }
-  private implicit def nettyCookieToRequestCookie(orig: JCookie) =
-    RequestCookie(orig.getName, orig.getValue, CookieOptions(orig.getDomain, orig.getPath, orig.getMaxAge, comment = orig.getComment))
-  private implicit def string2richer(s: String) = new {
-    def some = if (s == null || s.trim.isEmpty) None else Some(s)
-  }
-  
-  
+
+
   private val queryStringDecoder = new QueryStringDecoder(underlying.getUri)
   private val parsedUri = ParsedUri(underlying.getUri)
   val method: HttpMethod = underlying.getMethod
@@ -45,7 +30,7 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String, val se
   val path = queryStringDecoder.getPath.replace("^/" + appPath, "")
 
   val headers = {
-    Map((underlying.getHeaders map { e => e.getKey -> e.getValue.some.orNull }):_*)
+    Map((underlying.getHeaders map { e => e.getKey -> e.getValue.blank.orNull }):_*)
     
   }
 
@@ -61,15 +46,18 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String, val se
     new CookieJar(requestCookies)
   }
 
-  val queryString = new MultiMap(queryStringDecoder.getParameters)
+  val queryString = {
+    queryStringDecoder.getParameters.mapValues(_.toSeq): MultiMap
+  }
 
-  val contentType = headers(Names.CONTENT_TYPE)
+  val contentType = headers.get(Names.CONTENT_TYPE).flatMap(_.blank)
 
   private def isWsHandshake =
     method == Get && headers.contains(Names.SEC_WEBSOCKET_KEY1) && headers.contains(Names.SEC_WEBSOCKET_KEY2)
 
+  private def wsZero = if (isWsHandshake) 8L.some else 0L.some
   val contentLength =
-    headers.get(Names.CONTENT_LENGTH) flatMap (Option(_)) some (_.toLong) none { if (isWsHandshake) 8L else 0L }
+    headers get Names.CONTENT_LENGTH flatMap (_.blank some (_.toLong.some) none wsZero)
 
   val serverName = serverInfo.name
 
@@ -79,16 +67,26 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String, val se
 
   val inputStream = new ChannelBufferInputStream(underlying.getContent)
 
-  private val postDecoder = new HttpPostRequestDecoder(underlying)
+//  private val postDecoder = new HttpPostRequestDecoder(underlying)
   val parameterMap = {
-    if (!method.allowsBody) {
-      queryString
-    } else {
-      if (postDecoder.isMultipart) {
-
-      }
-    }
+    queryString
+//    if (!method.allowsBody) {
+//      queryString
+//    } else {
+//      if (postDecoder.isMultipart) {
+//        postDecoder.getBodyHttpDatas map { data =>
+//          data.getHttpDataType match {
+//            case formData: Attribute => {
+//              data.getName -> Seq(formData.getValue)
+//            }
+//            case
+//          }
+//        }
+//      } else {
+//
+//      }
+//    }
   }
 
-  def newResponse(ctx: ChannelHandlerContext) = new NettyHttpResponse(request, ctx)
+  private[scalatra] def newResponse(ctx: ChannelHandlerContext) = new NettyHttpResponse(this, ctx)
 }

@@ -24,13 +24,16 @@ case class Route(
    * returned.
    */
   def apply(): Option[MatchedRoute] = {
-    routeMatchers.foldLeft(Option(MultiMap())) {
-      (acc: Option[MultiParams], routeMatcher: RouteMatcher) => for {
-        routeParams <- acc
-        matcherParams <- routeMatcher()
-      } yield routeParams ++ matcherParams
-    } map { routeParams => MatchedRoute(action, routeParams) }
+    routeParams map (MatchedRoute(action, _))
   }
+
+  private def initialParams = None.asInstanceOf[Option[MultiParams]] 
+  private def routeParams = (initialParams /: routeMatchers) { (acc, matchRoute) => (acc, matchRoute()) match {
+    case (None, None) => None
+    case (None, Some(mm: MultiParams)) => Some(mm)
+    case (r, None) => r
+    case (Some(p), Some(mm: MultiParams)) => Some(p ++ mm)
+  } }
 
   /**
    * The reversible matcher of a route is the first reversible matcher, if
@@ -53,7 +56,7 @@ object Route {
 
   def apply(transformers: Seq[RouteTransformer], action: Action, contextPath: () => String): Route = {
     val route = Route(action = action, contextPath = contextPath)
-    transformers.foldLeft(route){ (route, transformer) => transformer(route) }
+    transformers.foldRight(route) { _ apply _ }
   }
 
   def appendMatcher(matcher: RouteMatcher): RouteTransformer = { route =>

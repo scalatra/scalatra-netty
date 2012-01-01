@@ -3,6 +3,7 @@ package org.scalatra
 import akka.util.Switch
 import collection.mutable.ConcurrentMap
 import com.google.common.collect.MapMaker
+import collection.JavaConversions._
 
 trait Mountable
 
@@ -25,7 +26,7 @@ trait WebServer extends Mounting {
   def version: String
   def port: Int
 
-  lazy val started = new Switch
+  protected lazy val started = new Switch
   def start()
   def stop()
   

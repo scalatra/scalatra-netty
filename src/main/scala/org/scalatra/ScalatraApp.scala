@@ -4,22 +4,17 @@ import scala.util.matching.Regex
 import java.io.{File, FileInputStream}
 import annotation.tailrec
 import util._
+import scala.io.Codec
 import io._
 
-object ScalatraApp
-{
+trait MultiParamsDef {
+  type MultiParams <: Map[String, _ <: Seq[String]]
+}
+
+object ScalatraApp extends MultiParamsDef {
   type MultiParams = util.MultiMap
 
   type Action = () => Any
-
-  @deprecated("Use HttpMethods.methods")
-  val httpMethods = HttpMethod.methods map { _.toString }
-
-  @deprecated("Use HttpMethods.methods filter { !_.isSafe }")
-  val writeMethods = HttpMethod.methods filter { !_.isSafe } map { _.toString }
-
-  @deprecated("Use CsrfTokenSupport.DefaultKey")
-  val csrfKey = CsrfTokenSupport.DefaultKey
 
   val EnvironmentKey = "org.scalatra.environment".intern
 
@@ -136,7 +131,7 @@ trait ScalatraApp extends CoreDsl with Mountable {
    */
   protected var doMethodNotAllowed: (Set[HttpMethod] => Any) = { allow =>
     status = 405
-    response.setHeader("Allow", allow.mkString(", "))
+    response.headers("Allow") = allow.mkString(", ")
   }
   def methodNotAllowed(f: Set[HttpMethod] => Any) = doMethodNotAllowed = f
 
@@ -203,14 +198,16 @@ trait ScalatraApp extends CoreDsl with Mountable {
    */
   protected def renderPipeline: RenderPipeline = {
     case bytes: Array[Byte] =>
-      response.getOutputStream.write(bytes)
+      response.outputStream.write(bytes)
     case file: File =>
-      using(new FileInputStream(file)) { in => zeroCopy(in, response.getOutputStream) }
+      using(new FileInputStream(file)) { in => zeroCopy(in, response.outputStream) }
     case _: Unit | Unit =>
       // If an action returns Unit, it assumes responsibility for the response
     case x: Any  =>
-      response.getWriter.print(x.toString)
+      response.outputStream.write(x.toString.getBytes(Codec.UTF8))
   }
+
+  protected def renderStaticFile(file: File): Unit
 
   /**
    * The current multiparams.  Multiparams are a result of merging the
@@ -219,8 +216,12 @@ trait ScalatraApp extends CoreDsl with Mountable {
    * The default value for an unknown param is the empty sequence.  Invalid
    * outside `handle`.
    */
-  def multiParams: MultiParams = request(MultiParamsKey).asInstanceOf[MultiParams]
-    .withDefaultValue(Seq.empty)
+  def multiParams: MultiParams = {
+    println("Request attributes: ")
+    println(request.attributes)
+    request.attributes.get(MultiParamsKey).get.asInstanceOf[MultiParams]
+      .withDefaultValue(Seq.empty)
+  }
 
   /*
    * Assumes that there is never a null or empty value in multiParams.  The servlet container won't put them
@@ -291,19 +292,15 @@ trait ScalatraApp extends CoreDsl with Mountable {
   protected implicit def routeMatcher2RouteTransformer(matcher: RouteMatcher): RouteTransformer =
     Route.appendMatcher(matcher)
 
-  /**
-   * The currently scoped response.  Invalid outside `handle`.
-   */
-  implicit def response = _response value
-
   protected def renderHaltException(e: HaltException) {
     e match {
-      case HaltException(Some(status), Some(reason), _, _) => response.setStatus(status, reason)
-      case HaltException(Some(status), None, _, _) => response.setStatus(status)
+      case HaltException(Some(status), Some(reason), _, _) => response.status = ResponseStatus(status, reason)
+      case HaltException(Some(status), None, _, _) => response.status = status
       case HaltException(None, _, _, _) => // leave status line alone
     }
-    e.headers foreach { case(name, value) => response.addHeader(name, value) }
+    response.headers ++= e.headers
     renderResponse(e.body)
+    response.end()
   }
 
   def get(transformers: RouteTransformer*)(action: => Any) = addRoute(Get, transformers, action)

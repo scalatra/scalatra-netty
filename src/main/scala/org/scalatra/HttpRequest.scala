@@ -41,7 +41,7 @@ trait HttpRequest {
   /**
    * The contents of any Content-Length fields in the HTTP request, or None if absent.
    */
-  def contentLength: Option[Int]
+  def contentLength: Option[Long]
 
   /**
    * When combined with scriptName, pathInfo, and serverPort, these variables can be used to complete the URL.
@@ -87,12 +87,13 @@ trait HttpRequest {
   /**
    * A map in which the server or application may store its own data.
    */
-  def attributes: mutable.Map[String, Any] = Map.empty
+  lazy val attributes: mutable.Map[String, Any] = mutable.Map.empty
 
   /**
    * A Map of the parameters of this request. Parameters are contained in the query string or posted form data.
    */
-  def parameterMap: MultiMap
+  def parameterMap: ScalatraApp.MultiParams
 
   def apply(key: String) = attributes(key)
+  def update(key: String, value: Any) = attributes(key) = value
 }

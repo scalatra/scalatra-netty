@@ -16,11 +16,11 @@ class ScalatraApplicationHandler(serverInfo: ServerInfo) extends SimpleChannelUp
 //  override def channelOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
 ////    ctx.setAttachment(sessions.newSession)
 //  }
-
-  override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
-    e.getMessage match {
-      case req: JHttpRequest => {
-      }
-    }
-  }
+//
+//  override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
+//    e.getMessage match {
+//      case req: JHttpRequest => {
+//      }
+//    }
+//  }
 }

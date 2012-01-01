@@ -7,7 +7,7 @@ resolvers += "repository.jboss.org" at "https://repository.jboss.org/nexus/conte
 resolvers += "Akka Repository" at "http://akka.io/repository"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" % "akka-actor" % "2.0-M1" % "provided",
+  "com.typesafe.akka" % "akka-actor" % "2.0-M1" % "provided;runtime",
   "org.jboss.netty" % "netty" % "3.2.7.Final",
   "org.scalaz" %% "scalaz-core" % "6.0.3",
   "com.google.guava" % "guava" % "10.0.1"

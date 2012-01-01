@@ -2,17 +2,26 @@ package org.scalatra
 package util
 
 import scala.collection.immutable.Map
-import collection.{MapProxy}
 
 object MultiMap {
   def apply() = new MultiMap
   def apply[SeqType <: Seq[String]](wrapped: Map[String, SeqType]) = new MultiMap(wrapped)
 
-  implicit def map2MultiMap(map: Map[String, Seq[String]]) = new MultiMap(map)
-  
+//  implicit def map2MultiMap(map: Map[String, Seq[String]]) = new MultiMap(map)
 }
 
-class MultiMap(val self: Map[String, Seq[String]] = Map.empty) extends MapProxy[String, Seq[String]]  {
-  
-  override def get(key: String) = self.get(key) orElse self.get(key + "[]")
+class MultiMap(wrapped: Map[String, Seq[String]] = Map.empty) extends Map[String, Seq[String]] {
+
+  def get(key: String): Option[Seq[String]] = {
+    (wrapped.get(key) orElse wrapped.get(key + "[]"))
+  }
+
+  def get(key: Symbol): Option[Seq[String]] = get(key.name)
+  def +[B1 >: Seq[String]](kv: (String, B1)) = new MultiMap(wrapped + kv.asInstanceOf[(String, Seq[String])])
+
+  def -(key: String) = new MultiMap(wrapped - key)
+
+  def iterator = wrapped.iterator
+
+  override def default(a: String): Seq[String] = wrapped.default(a)
 }

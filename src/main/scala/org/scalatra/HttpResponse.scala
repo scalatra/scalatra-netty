@@ -7,12 +7,16 @@ import mutable.ConcurrentMap
 import com.google.common.collect.MapMaker
 import org.jboss.netty.buffer.{ChannelBuffers, ChannelBufferOutputStream}
 import java.io.OutputStream
+import collection.JavaConversions._
 
 object ResponseStatus {
   def apply(nettyStatus: HttpResponseStatus): ResponseStatus = 
     ResponseStatus(nettyStatus.getCode, nettyStatus.getReasonPhrase)
 }
-case class ResponseStatus(code: Int, message: String) {
+case class ResponseStatus(code: Int, message: String) extends Ordered[ResponseStatus] {
+
+  def compare(that: ResponseStatus) = code.compareTo(that.code)
+
   def line = {
     val buf = new StringBuilder(message.length + 5);
     buf.append(code)
@@ -38,6 +42,8 @@ trait HttpResponse {
   def chunked_=(chunked: Boolean)
 
   def outputStream: OutputStream
+
+  def redirect(uri: String)
 
   def end()
 }

@@ -36,7 +36,7 @@ case object Put extends HttpMethod {
 }
 case object Delete extends HttpMethod {
   val isSafe = false
-  val allowsBody = False
+  val allowsBody = false
   override def toString = "DELETE"
 }
 case object Trace extends HttpMethod {
@@ -54,9 +54,7 @@ case object Patch extends HttpMethod {
   val allowsBody = true
   override def toString = "PATCH"
 }
-case class ExtensionMethod(name: String) extends HttpMethod {
-  val isSafe = false
-}
+case class ExtensionMethod(name: String, isSafe: Boolean = false, allowsBody: Boolean = false) extends HttpMethod
 
 object HttpMethod {
   private val methodMap =
@@ -67,7 +65,7 @@ object HttpMethod {
   /**
    * Maps a String as an HttpMethod.
    *
-   * @param a string representing an HttpMethod
+   * @param name a string representing an HttpMethod
    * @return the matching common HttpMethod, or an instance of `ExtensionMethod`
    * if no method matches
    */

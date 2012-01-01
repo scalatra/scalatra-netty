@@ -7,12 +7,18 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.group.DefaultChannelGroup
 import java.net.InetSocketAddress
+import org.jboss.netty.util.Version
 
 class NettyServer extends WebServer {
 
 
-  protected val applications = new ConcurrentHashMap[String, Mountable]
-  val bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()))
+  def name = "ScalatraNettyServer"
+
+  def version = Version.ID
+
+  private val bossThreadPool = Executors.newCachedThreadPool()
+  private val workerThreadPool = Executors.newCachedThreadPool()
+  val bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(bossThreadPool, workerThreadPool))
   bootstrap setPipelineFactory channelFactory
 
   val allChannels = new DefaultChannelGroup()
@@ -28,6 +34,8 @@ class NettyServer extends WebServer {
   def stop = started switchOff {
     allChannels.close().awaitUninterruptibly()
     bootstrap.releaseExternalResources()
+    workerThreadPool.shutdown()
+    bossThreadPool.shutdown()
   }
 
   def mount(name: String, app: Mountable) = null
