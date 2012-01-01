@@ -374,11 +374,10 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
     removeRoute(HttpMethod(method), route)
 
   /**
-   * The effective path against which routes are matched.  The definition
-   * varies between servlets and filters.
+   * The effective path against which routes are matched.
    */
   def requestPath = {
-    request.path.replace(path, "")
+    request.path.replace(path, "").blank getOrElse "/"
   }
 
   /**

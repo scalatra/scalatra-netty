@@ -9,6 +9,8 @@ object AppServer extends App {
   server.mount(new netty.ScalatraApp("/") {
     get("/hello") { "world" }
     get("/") { "It works!" }
+  }).mount(new netty.ScalatraApp("/", "blah"){
+    get("/test") { "an app nested in another app"}
   })
   server.mount(new netty.ScalatraApp("/", "testing") {
 
