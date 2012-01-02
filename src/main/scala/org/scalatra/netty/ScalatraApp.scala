@@ -4,11 +4,10 @@ package netty
 import java.io.File
 import scala.util.DynamicVariable
 
-class ScalatraApp(override val basePath: String = "/", override val pathName: String = "")(implicit val appContext: AppContext) extends org.scalatra.ScalatraApp {
+trait NettySupport { self: ScalatraApp =>
 
   protected def renderStaticFile(file: File) {
 
   }
 
-  
 }
