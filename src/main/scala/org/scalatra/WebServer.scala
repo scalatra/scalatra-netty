@@ -11,9 +11,11 @@ object AppMounter {
   def newAppRegistry: ApplicationRegistry = new MapMaker().makeMap[String, AppMounter]
   val EmptyPath = ""
 }
-trait AppMounter {
+trait AppMounter extends Initializable {
   import AppMounter._
-  
+
+
+
   private def absolutize(path: String) = normalizePath(if (path.startsWith("/")) path else basePath / pathName / path)
   private[scalatra] def normalizePath(pth: String) = ensureSlash(if (pth.endsWith("/")) pth.dropRight(1) else pth)
   
@@ -22,14 +24,15 @@ trait AppMounter {
   def basePath = "/"
   def pathName = EmptyPath
   def path = na("")
-  
-  implicit protected def applications: ApplicationRegistry
 
-  def mount(name: String): AppMounter = mount(ServerApp(name, normalizePath(path)))
-  def mount(app: AppMounter): AppMounter = mount(app.pathName, app)
-  def mount(name: String, app: AppMounter): AppMounter = {
+  implicit def appContext: AppContext
+  implicit protected def applications = appContext.applications
+
+  def mount(name: String)(implicit appContext: AppContext): AppMounter = mount(ServerApp(name, normalizePath(path)))
+  def mount(name: String, app: AppMounter)(implicit appContext: AppContext): AppMounter = {
     val normalizedPath = normalizePath(path / name)
     println("Registering an app to: %s" format normalizedPath)
+    app initialize appContext
     applications += normalizedPath -> app
     app
   }
@@ -50,10 +53,14 @@ trait AppMounter {
   def unapply(path: String) = applicationOption(path)
 }
 
-case class ServerApp(override val pathName: String, override val basePath: String = "/")(implicit val applications: AppMounter.ApplicationRegistry) extends AppMounter
+case class ServerApp(override val pathName: String, override val basePath: String = "/")(implicit val applications: AppMounter.ApplicationRegistry) extends AppMounter {
+  def initialize(config: AppContext) {}
+}
 
 case class ServerInfo(name: String, version: String, port: Int, base: String)
 trait WebServer extends AppMounter {
+
+  def initialize(config: AppContext) {}
 
   def name: String
   def version: String
@@ -61,7 +68,9 @@ trait WebServer extends AppMounter {
   def info = ServerInfo(name, version, port, normalizePath(path))
 
   implicit protected val applications = AppMounter.newAppRegistry
-  implicit lazy val appContext = DefaultAppContext(info)
+  implicit val appContext = DefaultAppContext(info)
+
+  def mount(app: AppMounter)(implicit appContext: AppContext): AppMounter = mount("", app)
 
   protected lazy val started = new Switch
   def start()

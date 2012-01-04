@@ -26,15 +26,20 @@ trait NamedPathApp { self: AppMounter =>
   def pathName: String
 }
 
+
+
 trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
 
 
+
   import ScalatraApp._
+
+  def name = getClass.getName
+
+
   /**
    * The routes registered in this kernel.
    */
-  def name = getClass.getName
-
   protected val routes: RouteRegistry = new RouteRegistry
 
   override def hasMatchingRoute(req: HttpRequest) = {

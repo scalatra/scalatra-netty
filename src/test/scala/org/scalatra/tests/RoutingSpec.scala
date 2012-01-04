@@ -1,9 +1,10 @@
-package org.scalatra.tests
+package org.scalatra
+package tests
 
-import org.scalatra.AppContext
+import netty.NettySupport
 
 
-class TestScalatraApp(base: String = "/")(implicit ctxt: AppContext) extends org.scalatra.netty.ScalatraApp(base) {
+class TestScalatraApp extends ScalatraApp with NettySupport {
 
   get("/") {
     "OMG! It works!!!"
