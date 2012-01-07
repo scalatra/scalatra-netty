@@ -15,6 +15,8 @@ trait Mountable extends PathManipulation with Initializable {
   def isEmpty: Boolean
   def isDefined: Boolean = !isEmpty
   def hasMatchingRoute(req: HttpRequest): Boolean
+
+
 }
 
 trait AppMounterLike extends PathManipulation {
