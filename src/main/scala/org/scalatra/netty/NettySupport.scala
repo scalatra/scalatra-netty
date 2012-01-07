@@ -4,17 +4,9 @@ package netty
 import java.io.File
 import scala.util.DynamicVariable
 
-trait NettySupport extends ScalatraApp with Initializable {
+trait NettySupport extends ScalatraApp {
 
-  type Config = AppContext
-
-  private var config: AppContext = null
-
-  implicit def appContext = config
-
-
-
-  protected def renderStaticFile(file: File) {
+  override protected def renderStaticFile(file: File) {
 
   }
 

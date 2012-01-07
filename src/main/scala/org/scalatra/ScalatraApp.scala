@@ -7,6 +7,7 @@ import util._
 import scala.io.Codec
 import io._
 import scala.util.DynamicVariable
+import collection.mutable.ListBuffer
 
 trait MultiParamsDef {
   type MultiParams <: Map[String, _ <: Seq[String]]
@@ -22,27 +23,28 @@ object ScalatraApp extends MultiParamsDef {
   val MultiParamsKey = "org.scalatra.MultiParams".intern
 }
 
-trait NamedPathApp { self: AppMounter =>
-  def pathName: String
-}
 
-
-
-trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
+trait ScalatraApp extends CoreDsl with Mountable {
 
 
 
   import ScalatraApp._
 
+  def isEmpty = false
+
   def name = getClass.getName
 
+
+  override def toString = "ScalatraApp(%s,%s)" format (appPath, name)
+
+  def initialize(config: AppContext) {}
 
   /**
    * The routes registered in this kernel.
    */
   protected val routes: RouteRegistry = new RouteRegistry
 
-  override def hasMatchingRoute(req: HttpRequest) = {
+  def hasMatchingRoute(req: HttpRequest) = {
     Console.println("The route registry")
     Console.println(routes)
     _request.withValue(req) {
@@ -54,8 +56,6 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
       actual.filter(_().isDefined).nonEmpty
     }
   }
-  
-  implicit def applications = appContext.applications
 
 
   /**
@@ -76,7 +76,6 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
    * $ 4. Executes the after filters with `runFilters`.
    * $ 5. The action result is passed to `renderResponse`.
    */
-
   protected def executeRoutes() = {
     val result = try {
       runFilters(routes.beforeFilters)
@@ -227,8 +226,6 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
       response.outputStream.write(x.toString.getBytes(Codec.UTF8))
   }
 
-  protected def renderStaticFile(file: File): Unit
-
   /**
    * The current multiparams.  Multiparams are a result of merging the
    * standard request params (query string or post params) with the route
@@ -355,16 +352,10 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
    * @see org.scalatra.ScalatraKernel#removeRoute
    */
   protected def addRoute(method: HttpMethod, transformers: Seq[RouteTransformer], action: => Any): Route = {
-    println("Adding a route with context path: " + path)
-    val route = Route(transformers, () => action, () => path)
+    val route = Route(transformers, () => action, () => appPath)
     routes.prependRoute(method, route)
     route
   }
-
-  /**
-   * The base path for URL generation
-   */
-  protected def path: String
 
   /**
    * Removes _all_ the actions of a given route for a given HTTP method.
@@ -382,7 +373,7 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
    * The effective path against which routes are matched.
    */
   def requestPath = {
-    request.path.replace(path, "").blank getOrElse "/"
+    request.path.replace(appPath, "/")
   }
 
   /**
@@ -415,5 +406,9 @@ trait ScalatraApp extends CoreDsl with AppMounter with NamedPathApp {
         response.end()
       }
     }
+  }
+
+  protected def renderStaticFile(file: File) {
+
   }
 }

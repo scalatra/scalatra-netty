@@ -3,6 +3,8 @@ package org.scalatra
 import collection.mutable.ConcurrentMap
 import com.google.common.collect.MapMaker
 import collection.JavaConversions._
+import scalaz._
+import Scalaz._
 
 trait AppContext {
 
@@ -17,39 +19,43 @@ trait AppContext {
   def application(req: HttpRequest): Option[ScalatraApp] = {
     Console.println("The registered applications:")
     Console.println(applications)
-    val path = req.uri.getPath
-    val parts = path.split("/")
-    val found = if (parts.length == 0) applications get "/"
-      else {
-        var i = 1
-        var curr = "" / parts(i)
-        Console.println("The current path: %s" format curr)
-        var next: Option[AppMounter] = applications get curr
-        var app: Option[AppMounter] = applications get "/"
-        while (app.isDefined && next.isDefined) {
-          i += 1
-          app = next
-          next = if((i) < parts.length) {
-            curr = curr / parts(i)
-            applications get curr
-          } else None
-        }
-        app
+    application(req.uri.getPath) map (_.mounted) flatMap {
+      case f: ScalatraApp if f.hasMatchingRoute(req) => {
+        Console.println("We found an App")
+        f.some
       }
-    if (found.isDefined) {
-      Console.println("We found an App")
-      if (found.get.isInstanceOf[ScalatraApp] && found.get.hasMatchingRoute(req)) {
-        found.map(_.asInstanceOf[ScalatraApp])
-      } else {
-        Console.println("But no matching route")
-        None
+      case f: ScalatraApp => {
+        Console.println("We found an App, But no matching route")
+        none[ScalatraApp]
       }
-    } else None
-    //found filter (_.hasMatchingRoute(req)) map (_.asInstanceOf[ScalatraApp])
+      case _ => {
+        Console.println("No matching route")
+        none[ScalatraApp]
+      }
+    }
   }
-
-//  implicit def sessions: SessionStore
+  
+  def application(path: String): Option[AppMounter[_ <: Mountable]] = {
+    val parts = path.split("/")
+    if (parts.length == 0) applications get "/"
+    else {
+      var i = 1
+      var curr = "" / parts(i)
+      Console.println("The current path: %s" format curr)
+      var next: Option[AppMounter[_ <: Mountable]] = applications get curr
+      var app: Option[AppMounter[_ <: Mountable]] = applications get "/"
+      while (app.isDefined && next.isDefined) {
+        i += 1
+        app = next
+        next = if((i) < parts.length) {
+          curr = curr / parts(i)
+          applications get curr
+        } else None
+      }
+      app
+    }
+  }
 
 }
 
-case class DefaultAppContext(server: ServerInfo)(implicit val applications: AppMounter.ApplicationRegistry) extends AppContext
+case class DefaultAppContext(server: ServerInfo, applications: AppMounter.ApplicationRegistry) extends AppContext

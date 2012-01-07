@@ -13,6 +13,9 @@ package object scalatra extends Control {
   type RenderPipeline = PartialFunction[Any, Any]
 
   implicit def map2MultiMap(map: scala.collection.Map[String, Seq[String]]): MultiMap = new MultiMap(Map(map.toSeq:_*))
+  
+  implicit def appMounter2app[TheApp <: Mountable](appMounter: AppMounter[TheApp]): TheApp = appMounter.mounted
+  implicit def app2AppMounter[TheApp <: Mountable](app: TheApp): AppMounter[TheApp] = app.mounter.asInstanceOf[AppMounter[TheApp]]
 
   implicit def extendedString(s: String) = new {
     def blank = if (isBlank) None else Some(s)
