@@ -4,11 +4,10 @@ package tests
 import org.specs2.Specification
 import java.util.concurrent.atomic.AtomicInteger
 import java.net.URI
+import java.util.concurrent.ConcurrentHashMap
+import collection.JavaConversions._
 
-object TestMounter {
-  def apply()(implicit applications: AppMounter.ApplicationRegistry) = new TestMounter
-}
-class TestMounter(implicit val applications: AppMounter.ApplicationRegistry) extends AppMounter
+
 class AppMounterSpec extends Specification { def is =
 
   "AppMounting should" ^
@@ -31,57 +30,58 @@ class AppMounterSpec extends Specification { def is =
 
   class AppMountingSpecContext {
 
-    implicit val applicationRegistry = AppMounter.newAppRegistry
+    implicit val context = new AppContext {
+      def server = ServerInfo("testserver", "0.0.1", 0, "")
 
-    val mounter = new AppMounter {
-      def name = "test-mounter-" + counter.incrementAndGet()
-
-      implicit val applications = applicationRegistry
+      implicit val applications: AppMounter.ApplicationRegistry = new ConcurrentHashMap[String, AppMounter]
     }
+    val root = new AppMounter("/", "", NullMountable())
     
-    def mountsWithBasePathWithSlash = testMount("/somepath", TestMounter())
+    def mountsWithBasePathWithSlash = testMount("/somepath")
     
-    def mountsWithBasePathWithoutSlash = testMount("apath", TestMounter())
+    def mountsWithBasePathWithoutSlash = testMount("apath")
     
     def throwForNonExisting = {
-      mounter.mount("thepath", TestMounter()) 
-      mounter("i-don-t-exist") must throwA[NoSuchElementException]
+      root.mount("thepath", NullMountable())
+      root.apply("i-don-t-exist") must throwA[NoSuchElementException]
     }
     
     def findsAbsolutePathFromRoot = {
-      val posts = mounter.mount("posts")
+      val posts = root.mount("posts")
       val comments = posts.mount("comments")
-      mounter("/posts/comments") must_== comments
+      root("/posts/comments") must_== comments
     }
     
     def findsAbsolutePathFromSub = {
-      val posts = mounter.mount("posts")
+      val posts = root.mount("posts")
       val comments = posts.mount("comments")
       comments("/posts/comments") must_== comments
     }
 
     def findsRelativePath = {
-      val posts = mounter.mount("posts")
+      val posts = root.mount("posts")
       val comments = posts.mount("comments")
       posts("comments") must_== comments
     }
     
     def findsForAbsoluteUri = {
-      val posts = mounter.mount("posts")
+      val posts = root.mount("posts")
       val comments = posts.mount("comments")
       posts(URI.create("/posts/comments")) must_== comments
     }
     
     def findsForRelativeUri = {
-      val posts = mounter.mount("posts")
+      val posts = root.mount("posts")
       val comments = posts.mount("comments")
       posts(URI.create("comments")) must_== comments
     }
+    
+    
 
-    private def testMount(path: String,  mountable: AppMounter) = {
+    private def testMount[TA <: Mountable](path: String) = {
       val pth = if (!path.startsWith("/")) "/" + path else path
-      mounter.mount(path, mountable)
-      mounter(pth) must_== mountable
+      val mm = root.mount(path, NullMountable())
+      root(pth) must_== mm
     }
   }
 }

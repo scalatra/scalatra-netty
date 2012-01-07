@@ -56,7 +56,7 @@ trait WebServer extends AppMounterLike {
   def version: String
   def port: Int
   
-  def mount[TheApp <: Mountable](app: => TheApp): AppMounter[TheApp] = mount("/", app)
+  def mount[TheApp <: Mountable](app: => TheApp): AppMounter = mount("/", app)
 
   protected lazy val started = new Switch
   def start()

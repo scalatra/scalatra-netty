@@ -14,8 +14,8 @@ package object scalatra extends Control {
 
   implicit def map2MultiMap(map: scala.collection.Map[String, Seq[String]]): MultiMap = new MultiMap(Map(map.toSeq:_*))
   
-  implicit def appMounter2app[TheApp <: Mountable](appMounter: AppMounter[TheApp]): TheApp = appMounter.mounted
-  implicit def app2AppMounter[TheApp <: Mountable](app: TheApp): AppMounter[TheApp] = app.mounter.asInstanceOf[AppMounter[TheApp]]
+  implicit def appMounter2app(appMounter: AppMounter): Mountable = appMounter.mounted
+  implicit def app2AppMounter(app: Mountable): AppMounter = app.mounter.asInstanceOf[AppMounter]
 
   implicit def extendedString(s: String) = new {
     def blank = if (isBlank) None else Some(s)

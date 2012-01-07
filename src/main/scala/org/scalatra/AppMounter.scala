@@ -7,7 +7,7 @@ import collection.JavaConversions._
 
 trait Mountable extends PathManipulation with Initializable {
 
-  @volatile private[scalatra] var mounter: AppMounter[_ <: Mountable] = _
+  @volatile private[scalatra] var mounter: AppMounter = _
   def basePath = mounter.basePath
   def pathName = mounter.pathName
   implicit def appContext: AppContext = mounter.appContext
@@ -15,8 +15,6 @@ trait Mountable extends PathManipulation with Initializable {
   def isEmpty: Boolean
   def isDefined: Boolean = !isEmpty
   def hasMatchingRoute(req: HttpRequest): Boolean
-
-
 }
 
 trait AppMounterLike extends PathManipulation {
@@ -24,10 +22,10 @@ trait AppMounterLike extends PathManipulation {
   
   def applications = appContext.applications
   def get(path: String) = appContext.application(normalizePath(path))
-  def apply(path: String): AppMounter[_ <: Mountable] = get(path).get
-  def apply(path: URI): AppMounter[_ <: Mountable] = apply(normalizePath(path.getRawPath))
+  def apply(path: String): AppMounter = (applications get normalizePath(path)).get
+  def apply(path: URI): AppMounter = apply(normalizePath(path.getRawPath))
 
-  protected def ensureApps(base: String): AppMounter[_ <: Mountable] = {
+  protected def ensureApps(base: String): AppMounter = {
     val pth = normalizePath(base)
     Console.out.println("the base path: " + pth)
     applications.get(pth) getOrElse {
@@ -42,23 +40,22 @@ trait AppMounterLike extends PathManipulation {
     }
   }
 
-
-  def mount[TheSubApp <: Mountable](path: String, app: => TheSubApp): AppMounter[TheSubApp] = {
+  def mount(path: String, app: => Mountable): AppMounter = {
     val (longest, name) = splitPaths(path)
-    val parent: AppMounter[_ <: Mountable] = ensureApps(longest)
+    val parent: AppMounter = ensureApps(longest)
     var curr = applications.get(parent.appPath / name)
     if (curr forall (_.isEmpty)) {
-      curr = Some(new AppMounter[TheSubApp](parent.appPath, name, app))
+      curr = Some(new AppMounter(parent.appPath, name, app))
       applications(parent.appPath / name) = curr.get
     }
-    curr.get.asInstanceOf[AppMounter[TheSubApp]]
+    curr.get.asInstanceOf[AppMounter]
   }
 }
 object AppMounter {
-  type ApplicationRegistry = ConcurrentMap[String, AppMounter[_ <: Mountable]]
-  def newAppRegistry: ApplicationRegistry = new MapMaker().makeMap[String, AppMounter[_ <: Mountable]]
+  type ApplicationRegistry = ConcurrentMap[String, AppMounter]
+  def newAppRegistry: ApplicationRegistry = new MapMaker().makeMap[String, AppMounter]
 }
-final class AppMounter[TheApp <: Mountable](val basePath: String, val pathName: String, app: => TheApp)(implicit val appContext: AppContext) extends AppMounterLike {
+final class AppMounter(val basePath: String, val pathName: String, app: => Mountable)(implicit val appContext: AppContext) extends AppMounterLike {
   lazy val mounted = {
     val a = app
     a.mounter = this
@@ -66,11 +63,9 @@ final class AppMounter[TheApp <: Mountable](val basePath: String, val pathName: 
     a
   }
 
-  type This = TheApp
-
-  def mount(path: String): AppMounter[NullMountable] = {
+  def mount(path: String): AppMounter = {
     val (longest, name) = splitPaths(path)
-    val parent: AppMounter[_ <: Mountable] = ensureApps(longest)
+    val parent: AppMounter = ensureApps(longest)
     mount(parent.appPath / name, NullMountable())
   }
 

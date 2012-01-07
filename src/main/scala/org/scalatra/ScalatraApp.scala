@@ -26,8 +26,6 @@ object ScalatraApp extends MultiParamsDef {
 
 trait ScalatraApp extends CoreDsl with Mountable {
 
-
-
   import ScalatraApp._
 
   def isEmpty = false
@@ -37,15 +35,15 @@ trait ScalatraApp extends CoreDsl with Mountable {
 
   override def toString = "ScalatraApp(%s,%s)" format (appPath, name)
 
-  private val submounts = ListBuffer[AppMounter[_ <: ScalatraApp] => Any]()
+  private val submounts = ListBuffer[AppMounter => Any]()
   def initialize(config: AppContext) {
-    submounts foreach (_ apply mounter.asInstanceOf[AppMounter[_ <: ScalatraApp]])
+    submounts foreach (_ apply mounter)
     submounts.clear()
   }
   
   protected def mount[TheSubApp <: ScalatraApp](path: String, app: => TheSubApp) {
     if (mounter == null) {
-      submounts += { (m: AppMounter[_ <: ScalatraApp]) => m.mount(path, app) }
+      submounts += { (m: AppMounter) => m.mount(path, app) }
     } else {
       mounter.mount(path, app)
     }

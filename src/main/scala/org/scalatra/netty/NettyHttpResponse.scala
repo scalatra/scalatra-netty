@@ -6,7 +6,7 @@ import org.jboss.netty.handler.codec.http.HttpHeaders.Names
 import scalaz.Scalaz._
 import org.jboss.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
 import org.jboss.netty.buffer.{ChannelBuffers, ChannelBufferOutputStream}
-import org.jboss.netty.handler.codec.http2.{HttpHeaders, DefaultHttpResponse, HttpResponseStatus}
+import org.jboss.netty.handler.codec.http2.{DefaultHttpResponse, HttpResponseStatus}
 
 class NettyHttpResponse(request: NettyHttpRequest, connection: ChannelHandlerContext) extends HttpResponse {
   

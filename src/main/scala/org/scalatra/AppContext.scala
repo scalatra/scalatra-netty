@@ -35,15 +35,15 @@ trait AppContext {
     }
   }
   
-  def application(path: String): Option[AppMounter[_ <: Mountable]] = {
+  def application(path: String): Option[AppMounter] = {
     val parts = path.split("/")
     if (parts.length == 0) applications get "/"
     else {
       var i = 1
       var curr = "" / parts(i)
       Console.println("The current path: %s" format curr)
-      var next: Option[AppMounter[_ <: Mountable]] = applications get curr
-      var app: Option[AppMounter[_ <: Mountable]] = applications get "/"
+      var next: Option[AppMounter] = applications get curr
+      var app: Option[AppMounter] = applications get "/"
       while (app.isDefined && next.isDefined) {
         i += 1
         app = next
