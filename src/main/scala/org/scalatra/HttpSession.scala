@@ -72,9 +72,9 @@ trait HttpSession extends mutable.ConcurrentMap[String, Any] with mutable.MapLik
 
   override def - (key: String): HttpSession = newSession(self - key)
   override def + [B1 >: Any] (kv: (String, B1)): HttpSession = newSession(self + kv)
-  override def + [B1 >: Any] (elem1: (String, B1), elem2: (String, B1), elems: (String, B1) *) =
+  override def + [B1 >: Any] (elem1: (String, B1), elem2: (String, B1), elems: (String, B1) *): HttpSession =
     newSession(self.+(elem1, elem2, elems: _*))
-  override def ++[B1 >: Any](xs: GenTraversableOnce[(String, B1)]) = newSession(self ++ xs)
+  override def ++[B1 >: Any](xs: GenTraversableOnce[(String, B1)]): HttpSession = newSession(self ++ xs)
 
   override def += (kv: (String, Any)) = { self += kv ; this }
   override def -= (key: String) = { self -= key ; this }
@@ -82,7 +82,8 @@ trait HttpSession extends mutable.ConcurrentMap[String, Any] with mutable.MapLik
 }
 
 object InMemorySession extends HttpSessionMeta[InMemorySession] {
-  def empty = new InMemorySession((new MapMaker).makeMap[String, Any])
+  private val factory = new MapMaker
+  def empty = new InMemorySession(factory.makeMap[String, Any])
 }
 class InMemorySession(val self: mutable.ConcurrentMap[String, Any]) extends HttpSession {
 

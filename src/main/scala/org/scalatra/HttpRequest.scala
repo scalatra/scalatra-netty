@@ -2,7 +2,7 @@ package org.scalatra
 
 import scala.collection.Map
 import scala.collection.mutable
-import java.io.{PrintWriter, InputStream}
+import java.io.{InputStream}
 import util.MultiMap
 import java.net.URI
 
