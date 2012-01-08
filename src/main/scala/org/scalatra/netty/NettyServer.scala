@@ -8,33 +8,35 @@ import org.jboss.netty.channel.group.DefaultChannelGroup
 import java.net.InetSocketAddress
 import org.jboss.netty.util.Version
 
-class NettyServer extends WebServer {
 
+case class NettyServer(
+             name: String = "ScalatraNettyServer", 
+             version: String = Version.ID , 
+             port: Int = 8765, 
+             publicDirectory: PublicDirectory = PublicDirectory("public"),
+             override val basePath: String = "/") extends WebServer {
 
-  def name = "ScalatraNettyServer"
-
-  def version = Version.ID
 
   private val bossThreadPool = Executors.newCachedThreadPool()
   private val workerThreadPool = Executors.newCachedThreadPool()
-  val bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(bossThreadPool, workerThreadPool))
+  private val bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(bossThreadPool, workerThreadPool))
   bootstrap setPipelineFactory channelFactory
 
   val allChannels = new DefaultChannelGroup()
 
   def channelFactory = new ScalatraPipelineFactory()
   
-  def start() = started switchOn {
+  onStart {
+    logger info ("Starting Netty HTTP server on %d" format port)
     bootstrap.bind(new InetSocketAddress(port))
   }
 
-  val port = 8765
-
-  def stop = started switchOff {
+  onStop {
     allChannels.close().awaitUninterruptibly()
     bootstrap.releaseExternalResources()
     workerThreadPool.shutdown()
     bossThreadPool.shutdown()
+    logger info ("Netty HTTP server on %d stopped." format port)
   }
 
 }

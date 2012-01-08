@@ -1,6 +1,7 @@
 package org
 
 import scalatra.util.MultiMap
+import java.util.regex.Pattern
 
 
 package object scalatra extends Control {
@@ -27,6 +28,8 @@ package object scalatra extends Control {
       case (false, false)                ⇒ s + "/" + path
       case (true, true)                  ⇒ s + path substring 1
     }
+
+    def regexEscape = Pattern.quote(s)
   }
   
   implicit def int2StatusCode(code: Int) = code match {

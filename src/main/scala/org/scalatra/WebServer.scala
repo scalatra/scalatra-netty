@@ -1,18 +1,15 @@
 package org.scalatra
 
 import akka.util.Switch
-trait PathManipulation {
-  
-  def basePath: String
-  def pathName: String
-  lazy val appPath: String = absolutizePath(basePath) / pathName
-  
-  protected def absolutizePath(path: String) = na(if (path.startsWith("/")) path else appPath / path)
-  protected def normalizePath(pth: String) = (na _ compose absolutizePath _)(pth)
+import scalax.file._
+import com.weiglewilczek.slf4s.Logging
+import collection.mutable.ListBuffer
 
-  private[scalatra] def na(pth: String) = ensureSlash(if (pth.endsWith("/")) pth.dropRight(1) else pth)
-  
-  private def ensureSlash(candidate: String) = {
+trait PathManipulationOps {
+  protected def absolutizePath(path: String): String
+  protected def normalizePath(pth: String) = (ensureSlash _ compose absolutizePath _)(pth)
+
+  protected def ensureSlash(candidate: String) = {
     (candidate.startsWith("/"), candidate.endsWith("/")) match {
       case (true, true) => candidate.dropRight(1)
       case (true, false) => candidate
@@ -26,16 +23,17 @@ trait PathManipulation {
     val parts = norm split "/"
     (absolutizePath(parts dropRight 1 mkString "/"), parts.lastOption getOrElse "")
   }
-  
-  
 }
 
-case class NullMountable() extends Mountable {
-
-  def isEmpty = true
-
-  def initialize(config: AppContext) {}
-  def hasMatchingRoute(req: HttpRequest) = false
+trait PathManipulation extends PathManipulationOps {
+  
+  def basePath: String
+  def pathName: String
+  lazy val appPath: String = absolutizePath(basePath) / pathName
+  
+  protected def absolutizePath(path: String): String = {
+    path.blank map (p => ensureSlash(if (p.startsWith("/")) p else appPath / p)) getOrElse appPath
+  }
 }
 
 case class ServerInfo(name: String, version: String, port: Int, base: String)
@@ -43,9 +41,10 @@ object WebServer {
   val DefaultPath = "/"
   val DefaultPathName = ""
 }
-trait WebServer extends AppMounterLike {
+trait WebServer extends Logging with AppMounterLike {
 
   def basePath = WebServer.DefaultPath
+  def publicDirectory: PublicDirectory
 
   final val pathName = WebServer.DefaultPathName
 
@@ -59,8 +58,28 @@ trait WebServer extends AppMounterLike {
   def mount[TheApp <: Mountable](app: => TheApp): AppMounter = mount("/", app)
 
   protected lazy val started = new Switch
-  def start()
-  def stop()
+  final def start() {
+    started switchOn {
+      initializeTopLevelApps()
+      startCallbacks foreach (_.apply())
+    }
+  }
+  
+  protected def initializeTopLevelApps() {
+    applications.values foreach (_.mounted)
+  }
+  
+  private val startCallbacks = ListBuffer[() => Any]()
+  private val stopCallbacks = ListBuffer[() => Any]()
+  
+  def onStart(thunk: => Any) = startCallbacks += { () => thunk }
+  def onStop(thunk: => Any) = stopCallbacks += { () => thunk }
+  
+  final def stop() {
+    started switchOff {
+      stopCallbacks foreach (_.apply())
+    }
+  }
 
 
 }

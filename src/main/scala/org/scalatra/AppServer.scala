@@ -1,15 +1,15 @@
 package org.scalatra
 
-import netty.{NettySupport, NettyServer}
+import netty.{NettyServer}
 
 object AppServer extends App {
 
-  val server = new NettyServer
-  server.mount(new ScalatraApp with NettySupport {
+  val server = NettyServer(publicDirectory = PublicDirectory("src/main/webapp"))
+  server.mount(new ScalatraApp {
     get("/hello") { "world" }
     get("/") { "It works!" }
 
-    mount("blah", new ScalatraApp with NettySupport {
+    mount("blah", new ScalatraApp  {
       get("/") {
         "index mounted under /blah"
       }

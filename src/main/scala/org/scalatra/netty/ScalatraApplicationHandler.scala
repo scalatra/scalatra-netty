@@ -20,7 +20,7 @@ class ScalatraApplicationHandler(implicit val appContext: AppContext) extends Si
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     e.getMessage match {
       case req: JHttpRequest => {
-
+        ctx.sendUpstream(e)
       }
     }
   }

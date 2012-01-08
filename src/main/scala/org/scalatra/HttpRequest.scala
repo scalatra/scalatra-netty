@@ -7,7 +7,7 @@ import util.MultiMap
 import java.net.URI
 
 /**
- * A representation of an HTTP request. Based on the Rack specification and Python WSGI (PEP 333).
+ * A representation of an HTTP request.
  */
 trait HttpRequest {
   /**

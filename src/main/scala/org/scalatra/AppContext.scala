@@ -5,8 +5,10 @@ import com.google.common.collect.MapMaker
 import collection.JavaConversions._
 import scalaz._
 import Scalaz._
+import com.weiglewilczek.slf4s.Logging
+import scalax.file.Path
 
-trait AppContext {
+trait AppContext extends Logging {
 
   implicit def applications: AppMounter.ApplicationRegistry
   def server: ServerInfo
@@ -17,19 +19,19 @@ trait AppContext {
   def update(key: String, value: Any) = attributes(key) = value
   
   def application(req: HttpRequest): Option[ScalatraApp] = {
-    Console.println("The registered applications:")
-    Console.println(applications)
+    logger.trace("The registered applications:")
+    logger.trace("%s" format applications)
     application(req.uri.getPath) map (_.mounted) flatMap {
       case f: ScalatraApp if f.hasMatchingRoute(req) => {
-        Console.println("We found an App")
+        logger.trace("We found an App")
         f.some
       }
       case f: ScalatraApp => {
-        Console.println("We found an App, But no matching route")
+        logger.trace("We found an App, But no matching route")
         none[ScalatraApp]
       }
       case _ => {
-        Console.println("No matching route")
+        logger.trace("No matching route")
         none[ScalatraApp]
       }
     }
@@ -41,7 +43,6 @@ trait AppContext {
     else {
       var i = 1
       var curr = "" / parts(i)
-      Console.println("The current path: %s" format curr)
       var next: Option[AppMounter] = applications get curr
       var app: Option[AppMounter] = applications get "/"
       while (app.isDefined && next.isDefined) {
@@ -58,4 +59,8 @@ trait AppContext {
 
 }
 
-case class DefaultAppContext(server: ServerInfo, applications: AppMounter.ApplicationRegistry) extends AppContext
+case class PublicDirectory(path: Path, cacheFiles: Boolean = true)
+case class DirectoryInfo(public: PublicDirectory, temp: Path, data: Path)
+case class DefaultAppContext(server: ServerInfo, applications: AppMounter.ApplicationRegistry) extends AppContext with PathManipulationOps {
+  protected def absolutizePath(path: String) = ensureSlash(if (path.startsWith("/")) path else server.base / path)
+}

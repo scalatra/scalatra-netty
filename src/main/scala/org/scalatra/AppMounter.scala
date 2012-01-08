@@ -4,6 +4,8 @@ import java.net.URI
 import com.google.common.collect.MapMaker
 import collection.mutable.ConcurrentMap
 import collection.JavaConversions._
+import com.weiglewilczek.slf4s.Logging
+
 
 trait Mountable extends PathManipulation with Initializable {
 
@@ -17,7 +19,16 @@ trait Mountable extends PathManipulation with Initializable {
   def hasMatchingRoute(req: HttpRequest): Boolean
 }
 
-trait AppMounterLike extends PathManipulation {
+
+case class NullMountable() extends Mountable {
+
+  def isEmpty = true
+
+  def initialize(config: AppContext) {}
+  def hasMatchingRoute(req: HttpRequest) = false
+}
+
+trait AppMounterLike extends PathManipulation { self: Logging =>
   implicit def appContext: AppContext
   
   def applications = appContext.applications
@@ -27,7 +38,6 @@ trait AppMounterLike extends PathManipulation {
 
   protected def ensureApps(base: String): AppMounter = {
     val pth = normalizePath(base)
-    Console.out.println("the base path: " + pth)
     applications.get(pth) getOrElse {
       val (parent, _) = splitPaths(pth)
       val app = if (pth == "/") {
@@ -46,6 +56,7 @@ trait AppMounterLike extends PathManipulation {
     var curr = applications.get(parent.appPath / name)
     if (curr forall (_.isEmpty)) {
       curr = Some(new AppMounter(parent.appPath, name, app))
+      logger info ("mounting app at: %s" format (parent.appPath / name))
       applications(parent.appPath / name) = curr.get
     }
     curr.get.asInstanceOf[AppMounter]
@@ -55,7 +66,7 @@ object AppMounter {
   type ApplicationRegistry = ConcurrentMap[String, AppMounter]
   def newAppRegistry: ApplicationRegistry = new MapMaker().makeMap[String, AppMounter]
 }
-final class AppMounter(val basePath: String, val pathName: String, app: => Mountable)(implicit val appContext: AppContext) extends AppMounterLike {
+final class AppMounter(val basePath: String, val pathName: String, app: => Mountable)(implicit val appContext: AppContext) extends Logging with AppMounterLike {
   lazy val mounted = {
     val a = app
     a.mounter = this

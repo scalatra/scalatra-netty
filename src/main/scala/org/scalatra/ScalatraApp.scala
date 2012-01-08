@@ -55,14 +55,9 @@ trait ScalatraApp extends CoreDsl with Mountable {
   protected val routes: RouteRegistry = new RouteRegistry
 
   def hasMatchingRoute(req: HttpRequest) = {
-    Console.println("The route registry")
-    Console.println(routes)
     _request.withValue(req) {
-      Console.println("Trying to match: %s" format requestPath)
       val mm = routes.matchingMethods
       val actual = mm flatMap (routes(_))
-      Console.println("The registered routes")
-      Console.println(actual)
       actual.filter(_().isDefined).nonEmpty
     }
   }
@@ -339,12 +334,12 @@ trait ScalatraApp extends CoreDsl with Mountable {
   def delete(transformers: RouteTransformer*)(action: => Any) = addRoute(Delete, transformers, action)
 
   /**
-   * @see [[org.scalatra.ScalatraKernel.get]]
+   * @see [[org.scalatra.ScalatraApp.get]]
    */
   def options(transformers: RouteTransformer*)(action: => Any) = addRoute(Options, transformers, action)
 
   /**
-   * @see [[org.scalatra.ScalatraKernel.get]]
+   * @see [[org.scalatra.ScalatraApp.get]]
    */
   def patch(transformers: RouteTransformer*)(action: => Any) = addRoute(Patch, transformers, action)
 
@@ -383,7 +378,7 @@ trait ScalatraApp extends CoreDsl with Mountable {
    * The effective path against which routes are matched.
    */
   def requestPath = {
-    request.path.replace(appPath, "/")
+    ensureSlash(request.path.replace(appPath, "")).blank getOrElse "/"
   }
 
   /**
