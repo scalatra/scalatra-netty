@@ -48,7 +48,7 @@ trait AppContext extends Logging {
       while (app.isDefined && next.isDefined) {
         i += 1
         app = next
-        next = if((i) < parts.length) {
+        next = if(i < parts.length) {
           curr = curr / parts(i)
           applications get curr
         } else None

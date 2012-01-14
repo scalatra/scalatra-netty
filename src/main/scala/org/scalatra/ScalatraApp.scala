@@ -56,8 +56,16 @@ trait ScalatraApp extends CoreDsl with Mountable {
 
   def hasMatchingRoute(req: HttpRequest) = {
     _request.withValue(req) {
+      println("Matching request for path: %s" format requestPath)
+      println("app.path: " + appPath)
+      println("request.path: " + request.path)
+      println("request.uri: " + request.uri.toASCIIString)
       val mm = routes.matchingMethods
+      println("Matching methods")
+      println(mm)
       val actual = mm flatMap (routes(_))
+      println("actual")
+      println(actual)
       actual.filter(_().isDefined).nonEmpty
     }
   }
@@ -378,7 +386,7 @@ trait ScalatraApp extends CoreDsl with Mountable {
    * The effective path against which routes are matched.
    */
   def requestPath = {
-    ensureSlash(request.path.replace(appPath, "")).blankOption getOrElse "/"
+    ensureSlash(request.path)
   }
 
   /**

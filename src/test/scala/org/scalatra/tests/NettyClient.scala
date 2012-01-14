@@ -9,8 +9,7 @@ import java.io.InputStream
 import scalax.io.{Codec, Resource}
 import collection.JavaConversions._
 import java.net.URI
-import rl.{MapQueryString, QueryString}
-import java.util.concurrent.TimeUnit
+import rl.MapQueryString
 
 object StringHttpMethod {
   val GET = "GET"
@@ -96,47 +95,29 @@ class NettyClient(val host: String, val port: Int) extends Client {
     }
     if (allowsBody.contains(method.toUpperCase(ENGLISH)) && body.nonBlank) req.setBody(body)
     val res = req.execute(async).get
-    println("RESPONSE? %s" format (res != null))
-    println("BODY: %s" format res.body)
     withResponse(res)(f)
   }
   
+  private class NettyClientResponse(response: Response) extends ClientResponse {
+    val cookies = (response.getCookies map { cookie =>
+      val cko = CookieOptions(cookie.getDomain, cookie.getPath, cookie.getMaxAge)
+      cookie.getName -> org.scalatra.Cookie(cookie.getName, cookie.getValue)(cko)
+    }).toMap
+
+    val headers = (response.getHeaders.keySet() map { k => k -> response.getHeaders(k).mkString("; ")}).toMap
+
+    val status = ResponseStatus(response.getStatusCode, response.getStatusText)
+
+    val contentType = response.getContentType
+
+    val charset = NettyClient.this.charset
+
+    val inputStream = response.getResponseBodyAsStream
+
+    val uri = response.getUri    
+  }
+  
   private def async = new AsyncCompletionHandler[ClientResponse] {
-    def onCompleted(response: Response) = {
-      // copy the values out
-      val cks = (response.getCookies map { cookie =>
-        val cko = CookieOptions(cookie.getDomain, cookie.getPath, cookie.getMaxAge)
-        cookie.getName -> org.scalatra.Cookie(cookie.getName, cookie.getValue)(cko)
-      }).toMap
-      println("COOKIES %s" format cks)
-      val hdrs = (response.getHeaders.keySet() map { k => k -> response.getHeaders(k).mkString("; ")}).toMap
-      println("HEADERS %s" format hdrs)
-      val sts = ResponseStatus(response.getStatusCode, response.getStatusText)
-      println("STATUS %s" format sts)
-      val chst = Charset.forName("UTF-8")
-      val is = response.getResponseBodyAsStream
-      println("INPUTSTREAM? %s" format (is != null))
-      val ctt = response.getContentType
-      println("CONTENT TYPE %s" format ctt)
-      val u = response.getUri
-      println("URI: %s" format u)
-      
-      // use copies
-      new ClientResponse {
-        val cookies = cks
-
-        val headers = hdrs
-
-        val status = sts
-
-        val contentType = ctt
-
-        val charset = chst
-
-        val inputStream = is
-
-        val uri = u
-      }
-    }
+    def onCompleted(response: Response) = new NettyClientResponse(response)
   }
 }

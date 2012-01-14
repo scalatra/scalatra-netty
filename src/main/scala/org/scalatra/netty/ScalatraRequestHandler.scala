@@ -1,12 +1,12 @@
 package org.scalatra
 package netty
 
-import org.jboss.netty.handler.codec.http2.{HttpVersion, HttpResponseStatus, DefaultHttpResponse, HttpRequest => JHttpRequest, HttpResponse => JHttpResponse}
 import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.channel._
 import scala.io.Codec
 import com.weiglewilczek.slf4s.Logging
 import scala.util.control.Exception._
+import org.jboss.netty.handler.codec.http2.{HttpHeaders, HttpVersion, HttpResponseStatus, DefaultHttpResponse, HttpRequest => JHttpRequest, HttpResponse => JHttpResponse}
 
 /**
  * This handler is akin to the handle method of scalatra
@@ -24,9 +24,11 @@ class ScalatraRequestHandler(implicit val appContext: AppContext) extends Simple
         if (app.isDefined) {
           app.get(req, resp)
         } else {
-          logger debug  ("Couldn't match the request")
+          logger warn  ("Couldn't match the request: %s" format evt.getUri)
           val resp = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
-          ctx.getChannel.write(resp).addListener(ChannelFutureListener.CLOSE)
+          resp.setContent(ChannelBuffers.wrappedBuffer("Not Found".getBytes("UTF-8")))
+          val fut = ctx.getChannel.write(resp)
+          if (!HttpHeaders.isKeepAlive(evt)) fut.addListener(ChannelFutureListener.CLOSE)
         }
       }
     }

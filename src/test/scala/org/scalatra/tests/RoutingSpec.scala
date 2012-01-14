@@ -36,8 +36,6 @@ class RoutingSpec extends ScalatraSpec {
     end
 
   def root = get("/") {
-    println("response? %s" format (response != null))
-    println("body: %s" format response.body)
     response.body must_== "OMG! It works!!!"
   }
 }

@@ -11,7 +11,7 @@
     </encoder>
   </appender>
 
-  <logger name="org.scalatra" level="DEBUG" />
+  <logger name="org.scalatra" level="TRACE" />
   <root level="INFO">
     <appender-ref ref="STDOUT"/>
     <!--<appender-ref ref="FLOWDOCK"/>-->
