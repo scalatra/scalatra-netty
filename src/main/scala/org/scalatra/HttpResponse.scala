@@ -5,7 +5,6 @@ import org.jboss.netty.handler.codec.http2.HttpResponseStatus
 import collection.mutable
 import mutable.ConcurrentMap
 import com.google.common.collect.MapMaker
-import org.jboss.netty.buffer.{ChannelBuffers, ChannelBufferOutputStream}
 import java.io.OutputStream
 import collection.JavaConversions._
 
@@ -27,8 +26,6 @@ case class ResponseStatus(code: Int, message: String) extends Ordered[ResponseSt
 }
 
 trait HttpResponse {
-
-
 
   def headers: ConcurrentMap[String, String] = new MapMaker().makeMap[String, String]
 

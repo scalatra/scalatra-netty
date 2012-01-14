@@ -6,6 +6,7 @@ import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.channel._
 import scala.io.Codec
 import com.weiglewilczek.slf4s.Logging
+import scala.util.control.Exception._
 
 /**
  * This handler is akin to the handle method of scalatra
@@ -43,7 +44,7 @@ class ScalatraRequestHandler(implicit val appContext: AppContext) extends Simple
     } catch {
       case e => {
         logger error ("Error during error handling", e)
-        //ctx.getChannel.close().await()
+        ignoring(classOf[Throwable]) { ctx.getChannel.close().await() }
       }
     }
   }

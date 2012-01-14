@@ -32,7 +32,7 @@ trait PathManipulation extends PathManipulationOps {
   lazy val appPath: String = absolutizePath(basePath) / pathName
   
   protected def absolutizePath(path: String): String = {
-    path.blank map (p => ensureSlash(if (p.startsWith("/")) p else appPath / p)) getOrElse appPath
+    path.blankOption map (p => ensureSlash(if (p.startsWith("/")) p else appPath / p)) getOrElse appPath
   }
 }
 
@@ -60,12 +60,12 @@ trait WebServer extends Logging with AppMounterLike {
   protected lazy val started = new Switch
   final def start() {
     started switchOn {
-      initializeTopLevelApps()
+      initializeApps() // If we don't initialize the apps here there are race conditions
       startCallbacks foreach (_.apply())
     }
   }
   
-  protected def initializeTopLevelApps() {
+  def initializeApps() {
     applications.values foreach (_.mounted)
   }
   

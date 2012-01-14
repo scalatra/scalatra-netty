@@ -2,6 +2,7 @@ package org
 
 import scalatra.util.MultiMap
 import java.util.regex.Pattern
+import rl.UrlCodingUtils
 
 
 package object scalatra extends Control {
@@ -19,9 +20,15 @@ package object scalatra extends Control {
   implicit def app2AppMounter(app: Mountable): AppMounter = app.mounter.asInstanceOf[AppMounter]
 
   implicit def extendedString(s: String) = new {
-    def blank = if (isBlank) None else Some(s)
+
+    def blankOption = if (isBlank) None else Some(s)
     def isBlank = s == null || s.trim.isEmpty
     def nonBlank = s != null || s.trim.nonEmpty
+
+    def urlEncode = UrlCodingUtils.urlEncode(s)
+    def formEncode = UrlCodingUtils.urlEncode(s, spaceIsPlus = true)
+    def urlDecode = UrlCodingUtils.urlDecode(s)
+    def formDecode = UrlCodingUtils.urlDecode(s, plusIsSpace = true)
 
     def /(path: String) = (s.endsWith("/"), path.startsWith("/")) match {
       case (true, false) | (false, true) ⇒ s + path
@@ -30,6 +37,7 @@ package object scalatra extends Control {
     }
 
     def regexEscape = Pattern.quote(s)
+
   }
   
   implicit def int2StatusCode(code: Int) = code match {

@@ -378,7 +378,7 @@ trait ScalatraApp extends CoreDsl with Mountable {
    * The effective path against which routes are matched.
    */
   def requestPath = {
-    ensureSlash(request.path.replace(appPath, "")).blank getOrElse "/"
+    ensureSlash(request.path.replace(appPath, "")).blankOption getOrElse "/"
   }
 
   /**

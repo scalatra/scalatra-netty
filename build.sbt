@@ -9,11 +9,12 @@ resolvers += "Akka Repository" at "http://akka.io/repository"
 libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-api" % "1.6.4",
   "org.slf4j" % "log4j-over-slf4j" % "1.6.4",
+  "com.mojolly.rl" %% "rl" % "0.2.5-SNAPSHOT",
   "com.weiglewilczek.slf4s" %% "slf4s" % "1.0.7",
   "ch.qos.logback" % "logback-classic" % "1.0.0" % "provided",
   "eu.medsea.mimeutil" % "mime-util" % "2.1.3",
   "net.iharder" % "base64" % "2.3.8",
-  "net.databinder" %% "dispatch-http" % "0.8.6",
+  "com.ning" % "async-http-client" % "1.7.0",
   "org.scala-tools.time" %% "time" % "0.5",
   "com.github.scala-incubator.io" %% "scala-io-core" % "0.3.0",
   "com.github.scala-incubator.io" %% "scala-io-file" % "0.3.0",

@@ -6,7 +6,7 @@ import org.jboss.netty.handler.codec.http.HttpHeaders.Names
 import scalaz.Scalaz._
 import org.jboss.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
 import org.jboss.netty.buffer.{ChannelBuffers, ChannelBufferOutputStream}
-import org.jboss.netty.handler.codec.http2.{HttpHeaders, DefaultHttpResponse, HttpResponseStatus}
+import org.jboss.netty.handler.codec.http2.{DefaultHttpResponse, HttpResponseStatus}
 
 class NettyHttpResponse(request: NettyHttpRequest, connection: ChannelHandlerContext) extends HttpResponse {
   
@@ -16,7 +16,7 @@ class NettyHttpResponse(request: NettyHttpRequest, connection: ChannelHandlerCon
   def status_=(status: ResponseStatus) = underlying.setStatus(status)
 
   def contentType = {
-    underlying.getHeader(Names.CONTENT_TYPE).blank some identity none {
+    underlying.getHeader(Names.CONTENT_TYPE).blankOption some identity none {
       underlying.setHeader(Names.CONTENT_TYPE, "text/plain")
       underlying.getHeader(Names.CONTENT_TYPE)
     }

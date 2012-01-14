@@ -8,7 +8,6 @@ import com.weiglewilczek.slf4s.Logging
 
 
 trait Mountable extends PathManipulation with Initializable {
-
   @volatile private[scalatra] var mounter: AppMounter = _
   def basePath = mounter.basePath
   def pathName = mounter.pathName
@@ -18,7 +17,6 @@ trait Mountable extends PathManipulation with Initializable {
   def isDefined: Boolean = !isEmpty
   def hasMatchingRoute(req: HttpRequest): Boolean
 }
-
 
 case class NullMountable() extends Mountable {
 

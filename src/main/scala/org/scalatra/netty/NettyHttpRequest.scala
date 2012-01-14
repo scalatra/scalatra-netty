@@ -32,8 +32,8 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String)(implic
   val path = queryStringDecoder.getPath.replace("^" + appPath, "")
 
   val headers = {
-    Map((underlying.getHeaders map { e => e.getKey -> e.getValue.blank.orNull }):_*)
-    
+    Map((underlying.getHeaders map { e => e.getKey -> e.getValue.blankOption.orNull }):_*)
+
   }
 
   val scheme = parsedUri.scheme
@@ -52,14 +52,14 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String)(implic
     queryStringDecoder.getParameters.mapValues(_.toSeq): MultiMap
   }
 
-  val contentType = headers.get(Names.CONTENT_TYPE).flatMap(_.blank)
+  val contentType = headers.get(Names.CONTENT_TYPE).flatMap(_.blankOption)
 
   private def isWsHandshake =
     method == Get && headers.contains(Names.SEC_WEBSOCKET_KEY1) && headers.contains(Names.SEC_WEBSOCKET_KEY2)
 
   private def wsZero = if (isWsHandshake) 8L.some else 0L.some
   val contentLength =
-    headers get Names.CONTENT_LENGTH flatMap (_.blank some (_.toLong.some) none wsZero)
+    headers get Names.CONTENT_LENGTH flatMap (_.blankOption some (_.toLong.some) none wsZero)
 
   val serverName = appContext.server.name
 
