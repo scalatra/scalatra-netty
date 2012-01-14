@@ -27,7 +27,7 @@ class RoutingSpec extends ScalatraSpec {
 
   mount(new TestScalatraApp)
 
-  def is = sequential ^
+  def is =
     "A scalatra app should" ^
       "respond to an index request" ! root ^
       "respond to a pathed request" ! get("/hello") { response.body must_== "world" } ^
