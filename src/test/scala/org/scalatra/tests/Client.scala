@@ -60,7 +60,7 @@ trait Client {
     submit("PUT", uri, Seq.empty, headers, body) { f }
   // @todo support PUT multipart/form-data for file uploads
 
-  def delete[A](uri: String, params: Iterable[(String, String)] = Seq.empty, headers: Map[String, String] = Map.empty)(f: => A): A =
+  def deleteReq[A](uri: String, params: Iterable[(String, String)] = Seq.empty, headers: Map[String, String] = Map.empty)(f: => A): A =
     submit("DELETE", uri, params, headers) { f }
 
   def options[A](uri: String, params: Iterable[(String, String)] = Seq.empty, headers: Map[String, String] = Map.empty)(f: => A): A =
@@ -82,6 +82,6 @@ trait Client {
     submit("PATCH", uri, Seq.empty, headers, body) { f }
 
   private[tests] def toQueryString(params: Traversable[(String, String)]) =
-    params.map(t => List(t._1, t._2).map(encode(_, "UTF-8")).mkString("=")).mkString("&")
+    params.map(t => List(t._1, t._2).map(_.urlEncode).mkString("=")).mkString("&")
 
 }

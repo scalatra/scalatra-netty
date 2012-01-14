@@ -7,9 +7,9 @@ import collection.JavaConversions._
 import util.MultiMap
 import org.jboss.netty.buffer.{ChannelBufferInputStream}
 import org.jboss.netty.channel.ChannelHandlerContext
-import org.jboss.netty.handler.codec.http2.{Attribute, HttpPostRequestDecoder, QueryStringDecoder, HttpRequest => JHttpRequest, HttpMethod => JHttpMethod}
 import org.jboss.netty.handler.codec.http.{CookieDecoder, Cookie => JCookie}
 import java.net.URI
+import org.jboss.netty.handler.codec.http2.{Attribute, HttpPostRequestDecoder, QueryStringDecoder, HttpRequest => JHttpRequest, HttpMethod => JHttpMethod}
 
 private object ParsedUri {
   private val UriParts = """^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?""".r
@@ -33,7 +33,6 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String)(implic
 
   val headers = {
     Map((underlying.getHeaders map { e => e.getKey -> e.getValue.blankOption.orNull }):_*)
-
   }
 
   val scheme = parsedUri.scheme
@@ -69,25 +68,26 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String)(implic
 
   val inputStream = new ChannelBufferInputStream(underlying.getContent)
 
-//  private val postDecoder = new HttpPostRequestDecoder(underlying)
+  
   val parameterMap = {
-    queryString
-//    if (!method.allowsBody) {
-//      queryString
-//    } else {
-//      if (postDecoder.isMultipart) {
-//        postDecoder.getBodyHttpDatas map { data =>
-//          data.getHttpDataType match {
-//            case formData: Attribute => {
-//              data.getName -> Seq(formData.getValue)
-//            }
-//            case
-//          }
-//        }
-//      } else {
-//
-//      }
-//    }
+    if (!method.allowsBody) {
+      queryString
+    } else {
+      val postDecoder = new HttpPostRequestDecoder(underlying)
+      MultiMap({
+        queryString ++ (postDecoder.getBodyHttpDatas.foldLeft(Map.empty[String, Seq[String]].withDefaultValue(Seq.empty[String])) { (container, data) =>
+          data match {
+            case d: Attribute => {
+              container + (d.getName -> (Seq(d.getValue) ++ container(d.getName)))
+            }
+            case other => {
+              println("type: %s" format other.getHttpDataType.name)
+              container
+            }
+          }
+        })
+      })
+    }
   }
 
   private[scalatra] def newResponse(ctx: ChannelHandlerContext) = new NettyHttpResponse(this, ctx)

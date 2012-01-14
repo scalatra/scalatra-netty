@@ -63,7 +63,15 @@ class HttpMethodsSpec extends ScalatraSpec {
       "allow get requests with query params" ! getQuery ^
       "allow head requests" ! getHead ^
       "allow options requests" ! getOptions ^
+      "allow delete requests" ! deleteRequest ^
+      "allow url encoded posts" ! formEncodedRequests ^
     end
+  
+  def formEncodedRequests = {
+    post("/urlencode", Map("first" -> "hello", "last" -> "world")) {
+      response.body must_== "hello world"
+    }
+  }
   
   def getHelloParam = {
     get("/hello/world") {
@@ -88,6 +96,12 @@ class HttpMethodsSpec extends ScalatraSpec {
   def getOptions = {
     options("/options") {
       response.body must_== "options success"
+    }
+  }
+  
+  def deleteRequest = {
+    deleteReq("/delete/blah") {
+      response.body must_== "blah"
     }
   }
 }

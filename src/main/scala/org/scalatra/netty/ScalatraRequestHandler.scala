@@ -27,8 +27,7 @@ class ScalatraRequestHandler(implicit val appContext: AppContext) extends Simple
           logger warn  ("Couldn't match the request: %s" format evt.getUri)
           val resp = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
           resp.setContent(ChannelBuffers.wrappedBuffer("Not Found".getBytes("UTF-8")))
-          val fut = ctx.getChannel.write(resp)
-          fut.addListener(ChannelFutureListener.CLOSE)
+          ctx.getChannel.write(resp).addListener(ChannelFutureListener.CLOSE)
         }
       }
     }
