@@ -14,7 +14,6 @@ import org.jboss.netty.handler.codec.http2.{HttpHeaders, HttpVersion, HttpRespon
 class ScalatraRequestHandler(implicit val appContext: AppContext) extends SimpleChannelUpstreamHandler with Logging {
 
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
-    
     e.getMessage match {
       case evt: JHttpRequest => {
         logger debug ("Received request to: %s" format evt.getUri)

@@ -171,7 +171,7 @@ public class HttpPostRequestDecoder {
         }
         this.request = request;
         HttpMethod method = request.getMethod();
-        if (method.equals(HttpMethod.POST) || method.equals(HttpMethod.PUT)) {
+        if (method.equals(HttpMethod.POST) || method.equals(HttpMethod.PUT) || method.equals(HttpMethod.PATCH)) {
             bodyToDecode = true;
         }
         this.charset = charset;

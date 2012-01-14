@@ -1,8 +1,11 @@
-package org.scalatra.logback
+package org.scalatra
+package logback
 
 import ch.qos.logback.classic.pattern.ClassicConverter
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.Level
+import scalaz._
+import Scalaz._
 
 class LevelColorizer extends ClassicConverter {
   private val EndColor = "\u001b[m"
@@ -19,8 +22,7 @@ class LevelColorizer extends ClassicConverter {
     Level.ERROR -> ErrorColor)
 
   def convert(event: ILoggingEvent) = {
-    val c = colors.getOrElse(event.getLevel, "")
-    val cOpt = if (c == null || c.trim().isEmpty) None else Some(c)
-    "%s%s%s" format (c, event.getLevel, cOpt map (_ ⇒ EndColor) getOrElse "")
+    val c = colors.get(event.getLevel) | ""
+    "%s%s%s" format (c, event.getLevel, c.blankOption some (_ ⇒ EndColor) none "")
   }
 }

@@ -48,7 +48,7 @@ class HttpMethodsApp extends ScalatraApp {
   }
   
   patch("/patching") {
-    "patch success"
+    params("first") + " " + params("last")
   }
   
 }
@@ -64,15 +64,29 @@ class HttpMethodsSpec extends ScalatraSpec {
       "allow head requests" ! getHead ^
       "allow options requests" ! getOptions ^
       "allow delete requests" ! deleteRequest ^
-      "allow url encoded posts" ! formEncodedRequests ^
+      "allow url encoded posts" ! formEncodedPosts ^
+      "allow url encoded puts" ! formEncodedPuts ^
+      "allow url encoded patches" ! formEncodedPatches ^
     end
   
-  def formEncodedRequests = {
+  def formEncodedPosts = {
     post("/urlencode", Map("first" -> "hello", "last" -> "world")) {
       response.body must_== "hello world"
     }
   }
-  
+
+  def formEncodedPuts = {
+    put("/update", Map("first" -> "hello", "last" -> "world")) {
+      response.body must_== "hello world"
+    }
+  }
+
+  def formEncodedPatches = {
+    patch("/patching", Map("first" -> "hello", "last" -> "world")) {
+      response.body must_== "hello world"
+    }
+  }
+
   def getHelloParam = {
     get("/hello/world") {
       response.statusCode must_== 200

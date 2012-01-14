@@ -73,20 +73,22 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String)(implic
     if (!method.allowsBody) {
       queryString
     } else {
-      val postDecoder = new HttpPostRequestDecoder(underlying)
-      MultiMap({
-        queryString ++ (postDecoder.getBodyHttpDatas.foldLeft(Map.empty[String, Seq[String]].withDefaultValue(Seq.empty[String])) { (container, data) =>
-          data match {
-            case d: Attribute => {
-              container + (d.getName -> (Seq(d.getValue) ++ container(d.getName)))
-            }
-            case other => {
-              println("type: %s" format other.getHttpDataType.name)
-              container
-            }
-          }
-        })
-      })
+      MultiMap(queryString ++ readPostData)
+    }
+  }
+  
+  private def readPostData() = {
+    val postDecoder = new HttpPostRequestDecoder(underlying)
+    postDecoder.getBodyHttpDatas.foldLeft(Map.empty[String, Seq[String]].withDefaultValue(Seq.empty[String])) { (container, data) =>
+      data match {
+        case d: Attribute => {
+          container + (d.getName -> (Seq(d.getValue) ++ container(d.getName)))
+        }
+        case other => {
+          println("type: %s" format other.getHttpDataType.name)
+          container
+        }
+      }
     }
   }
 
