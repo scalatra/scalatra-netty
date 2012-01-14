@@ -8,6 +8,7 @@ import scala.io.Codec
 import io._
 import scala.util.DynamicVariable
 import collection.mutable.ListBuffer
+import java.util.regex.Pattern
 
 trait MultiParamsDef {
   type MultiParams <: Map[String, _ <: Seq[String]]
@@ -386,7 +387,7 @@ trait ScalatraApp extends CoreDsl with Mountable {
    * The effective path against which routes are matched.
    */
   def requestPath = {
-    ensureSlash(request.path)
+    ensureSlash(request.path.replaceFirst(appPath, ""))
   }
 
   /**

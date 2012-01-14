@@ -61,6 +61,8 @@ class HttpMethodsSpec extends ScalatraSpec {
     "The HttpMethod support should" ^ 
       "allow get requests with path params" ! getHelloParam ^
       "allow get requests with query params" ! getQuery ^
+      "allow head requests" ! getHead ^
+      "allow options requests" ! getOptions ^
     end
   
   def getHelloParam = {
@@ -74,6 +76,18 @@ class HttpMethodsSpec extends ScalatraSpec {
     get("/query", Map("val1" -> "hello", "val2" -> "world")) {
       response.statusCode must_== 200
       response.body must_== "hello world"
+    }
+  }
+  
+  def getHead = {
+    head("/some") {
+      response.statusCode must_== 200
+    }
+  }
+  
+  def getOptions = {
+    options("/options") {
+      response.body must_== "options success"
     }
   }
 }

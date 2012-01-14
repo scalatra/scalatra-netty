@@ -28,7 +28,7 @@ class ScalatraRequestHandler(implicit val appContext: AppContext) extends Simple
           val resp = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
           resp.setContent(ChannelBuffers.wrappedBuffer("Not Found".getBytes("UTF-8")))
           val fut = ctx.getChannel.write(resp)
-          if (!HttpHeaders.isKeepAlive(evt)) fut.addListener(ChannelFutureListener.CLOSE)
+          fut.addListener(ChannelFutureListener.CLOSE)
         }
       }
     }
