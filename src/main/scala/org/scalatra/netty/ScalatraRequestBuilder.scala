@@ -9,15 +9,21 @@ import scalaz._
 import Scalaz._
 import org.jboss.netty.handler.codec.http2.HttpHeaders.Names
 import org.jboss.netty.handler.codec.http2.InterfaceHttpData.HttpDataType
-import org.jboss.netty.buffer.{ChannelBufferFactory, ChannelBuffers, ChannelBufferInputStream}
-import org.jboss.netty.handler.codec.frame.TooLongFrameException
 import org.jboss.netty.handler.codec.http2.{HttpChunkTrailer, HttpVersion => JHttpVersion, HttpHeaders, FileUpload, Attribute, QueryStringDecoder, HttpChunk, DefaultHttpDataFactory, HttpPostRequestDecoder, HttpRequest => JHttpRequest}
 import java.net.{SocketAddress, URI}
+import scala.collection.mutable
+import java.io.{FileOutputStream, FileInputStream, File}
+import org.jboss.netty.buffer.{ChannelBuffer, ChannelBufferFactory, ChannelBuffers, ChannelBufferInputStream}
+import scala.util.control.Exception._
 
 class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appContext: AppContext) extends ScalatraUpstreamHandler {
 
   @volatile private var request: JHttpRequest = _
   @volatile private var method: HttpMethod = _
+  @volatile private var bodyBuffer: Option[File] = None
+  
+  private val filesToDelete = new mutable.HashSet[File] with mutable.SynchronizedSet[File] 
+  
   private val factory = new DefaultHttpDataFactory()
   private var postDecoder: Option[HttpPostRequestDecoder] = None
 
@@ -26,8 +32,16 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
     postDecoder = None
   } 
   
+  private def clearBodyBuffer() {
+    (allCatch andFinally {
+      filesToDelete.clear()
+      bodyBuffer = None
+    })(filesToDelete foreach { _.delete() })
+  }
+  
   override def channelClosed(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
     clearDecoder()
+    clearBodyBuffer()
   }
   
   private def isHtmlPost = {
@@ -40,7 +54,8 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
       case request: JHttpRequest => {
         clearDecoder()
         this.request = request
-        this.method = request.getMethod
+        method = request.getMethod
+        bodyBuffer = None
         if (isHtmlPost)
           postDecoder = new HttpPostRequestDecoder(factory, request, Codec.UTF8).some
         
@@ -58,7 +73,7 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
         
         if (chunk.isLast) {
           addTrailingHeaders(chunk)
-          if (!isHtmlPost) request.setHeader(Names.CONTENT_LENGTH, request.getContent.readableBytes().toString)
+          if (!isHtmlPost) request.setHeader(Names.CONTENT_LENGTH, contentLength)
           sendOn(e.getChannel, e.getRemoteAddress)
         }
       }
@@ -69,6 +84,8 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
   private def sendOn(channel: Channel, remoteAddress: SocketAddress) {
     val req = scalatraRequest
     request = null
+    try { bodyBuffer foreach { _.deleteOnExit() }}
+    bodyBuffer = None
     Channels.fireMessageReceived(channel, req, remoteAddress)
   }
   
@@ -80,6 +97,14 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
         }
       }
       case _ =>
+    }
+  }
+  
+  private def contentLength = {
+    if (bodyBuffer.isEmpty) {
+      request.getContent.readableBytes.toString
+    } else {
+      ((bodyBuffer map (_.length())) | 0L).toString 
     }
   }
   
@@ -96,10 +121,26 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
   }
   
   private def addChunkToBody(chunk: HttpChunk) {
-    if ((request.getContent.readableBytes() + chunk.getContent.readableBytes()) > maxPostBodySize) {
-      throw new TooLongFrameException("HTTP content length exceeded " + maxPostBodySize + " bytes.")
+    if ((request.getContent.readableBytes() + chunk.getContent.readableBytes()) > maxPostBodySize)
+      bodyBuffer = overflowToFile(chunk)
+    writeToBodyBuffer(chunk.getContent)
+  }
+  
+  private def writeToBodyBuffer(buffer: ChannelBuffer) {
+    if (bodyBuffer.isEmpty) request.getContent.writeBytes(buffer)
+    else {
+      bodyBuffer foreach { pth =>
+        new FileOutputStream(pth, true).getChannel.write(buffer.toByteBuffer)
+      }
     }
-    request.getContent.writeBytes(chunk.getContent)
+  }
+
+  private def overflowToFile(chunk: HttpChunk) = {
+    val tmpFile = File.createTempFile("sclatra-tmp", null, new File(appContext.server.tempDirectory.path.toAbsolute.path))
+    new FileOutputStream(tmpFile).getChannel.write(request.getContent.toByteBuffer)
+    tmpFile.deleteOnExit()
+    filesToDelete += tmpFile
+    tmpFile.some
   }
   
   private def scalatraRequest: HttpRequest = {

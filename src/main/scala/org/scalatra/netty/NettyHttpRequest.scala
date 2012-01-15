@@ -10,8 +10,6 @@ import java.net.URI
 import util.{PathManipulationOps, MultiMap}
 import java.io.InputStream
 
-private case class ParsedUri(scheme: String, authority: String, rawPath: String, queryString: String, fragment: String)
-
 class NettyHttpRequest(
         val method: HttpMethod,
         val uri: URI, 
