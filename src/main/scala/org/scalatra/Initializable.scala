@@ -1,5 +1,7 @@
 package org.scalatra
 
+import util.PathManipulation
+
 /**
  * Trait representing an object that can't be fully initialized by its
  * constructor.  Useful for unifying the initialization process of an

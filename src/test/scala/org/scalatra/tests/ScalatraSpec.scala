@@ -7,7 +7,7 @@ import org.specs2.specification.{Step, Fragments}
 
 trait ScalatraSpec extends Specification with Client {
 
-  val server = NettyServer(port = FreePort.randomFreePort(), publicDirectory = PublicDirectory("src/test/webapp"))
+  val server = NettyServer(FreePort.randomFreePort(), PublicDirectory("src/test/webapp"))
   val serverClient: Client = new NettyClient("127.0.0.1", server.port)
 
   def mount[TheApp <: Mountable](mountable: => TheApp) {

@@ -4,7 +4,7 @@ import netty.{NettyServer}
 
 object AppServer extends App {
 
-  val server = NettyServer(publicDirectory = PublicDirectory("src/main/webapp"))
+  val server = NettyServer( PublicDirectory("src/main/webapp"))
   server.mount(new ScalatraApp {
     get("/hello") { "world" }
     get("/") { "It works!" }
@@ -17,5 +17,4 @@ object AppServer extends App {
   })
   server.start()
   println("The servers started on %d" format server.port)
-  sys.addShutdownHook(server.stop)
 }

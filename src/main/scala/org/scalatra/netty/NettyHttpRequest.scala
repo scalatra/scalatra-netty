@@ -4,51 +4,38 @@ package netty
 import org.jboss.netty.handler.codec.http2.HttpHeaders.Names
 import scalaz.Scalaz._
 import collection.JavaConversions._
-import util.MultiMap
-import org.jboss.netty.buffer.{ChannelBufferInputStream}
 import org.jboss.netty.channel.ChannelHandlerContext
-import org.jboss.netty.handler.codec.http.{CookieDecoder, Cookie => JCookie}
+import org.jboss.netty.handler.codec.http.CookieDecoder
 import java.net.URI
-import org.jboss.netty.handler.codec.http2.{Attribute, HttpPostRequestDecoder, QueryStringDecoder, HttpRequest => JHttpRequest, HttpMethod => JHttpMethod}
+import util.{PathManipulationOps, MultiMap}
+import java.io.InputStream
 
-private object ParsedUri {
-  private val UriParts = """^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?""".r
-  def apply(uriString: String): ParsedUri = {
-    val UriParts(_, sch, _, auth, rawPath, _, query, _, fragment) = uriString
-    ParsedUri(sch, auth, rawPath, query, fragment)
-  }
-}
 private case class ParsedUri(scheme: String, authority: String, rawPath: String, queryString: String, fragment: String)
 
-class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String)(implicit appContext: AppContext) extends HttpRequest {
+class NettyHttpRequest(
+        val method: HttpMethod,
+        val uri: URI, 
+        val headers: Map[String, String],
+        val queryString: MultiMap,
+        postParameters: MultiMap,
+        val files: Map[String, HttpFile],
+        val serverProtocol: HttpVersion,
+        val inputStream: InputStream)(implicit appContext: AppContext) extends HttpRequest {
 
-  val uri = URI.create(underlying.getUri)
+  val path = uri.getPath.replaceFirst("^" + appPath, "")
 
-  private val queryStringDecoder = new QueryStringDecoder(underlying.getUri)
-  private val parsedUri = ParsedUri(underlying.getUri)
-  val method: HttpMethod = underlying.getMethod
+  val appPath = PathManipulationOps.ensureSlash(appContext.server.base)
 
-
-  val path = queryStringDecoder.getPath.replace("^" + appPath, "")
-
-  val headers = {
-    Map((underlying.getHeaders map { e => e.getKey -> e.getValue.blankOption.orNull }):_*)
-  }
-
-  val scheme = parsedUri.scheme
+  val scheme = uri.getScheme
 
   val cookies = {
     val nettyCookies = new CookieDecoder(true).decode(headers.getOrElse(Names.COOKIE, ""))
-    val requestCookies = 
+    val requestCookies =
       Map((nettyCookies map { nc =>
         val reqCookie: RequestCookie = nc
         reqCookie.name -> reqCookie
       }).toList:_*)
     new CookieJar(requestCookies)
-  }
-
-  val queryString = {
-    queryStringDecoder.getParameters.mapValues(_.toSeq): MultiMap
   }
 
   val contentType = headers.get(Names.CONTENT_TYPE).flatMap(_.blankOption)
@@ -64,33 +51,7 @@ class NettyHttpRequest(val underlying: JHttpRequest, val appPath: String)(implic
 
   val serverPort = appContext.server.port
 
-  val serverProtocol = underlying.getProtocolVersion.getText
+  val parameters = MultiMap(queryString ++ postParameters)
 
-  val inputStream = new ChannelBufferInputStream(underlying.getContent)
-
-  
-  val parameterMap = {
-    if (!method.allowsBody) {
-      queryString
-    } else {
-      MultiMap(queryString ++ readPostData)
-    }
-  }
-  
-  private def readPostData() = {
-    val postDecoder = new HttpPostRequestDecoder(underlying)
-    postDecoder.getBodyHttpDatas.foldLeft(Map.empty[String, Seq[String]].withDefaultValue(Seq.empty[String])) { (container, data) =>
-      data match {
-        case d: Attribute => {
-          container + (d.getName -> (Seq(d.getValue) ++ container(d.getName)))
-        }
-        case other => {
-          println("type: %s" format other.getHttpDataType.name)
-          container
-        }
-      }
-    }
-  }
-
-  private[scalatra] def newResponse(ctx: ChannelHandlerContext) = new NettyHttpResponse(this, ctx)
+  protected[scalatra] def newResponse(ctx: ChannelHandlerContext) = new NettyHttpResponse(this, ctx)
 }

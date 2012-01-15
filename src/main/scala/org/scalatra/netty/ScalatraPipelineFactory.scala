@@ -2,18 +2,29 @@ package org.scalatra
 package netty
 
 import org.jboss.netty.channel.{Channels, ChannelPipelineFactory}
-import org.jboss.netty.handler.codec.http2.{HttpResponseEncoder, HttpChunkAggregator, HttpRequestDecoder}
+import org.jboss.netty.handler.codec.http2._
+import org.jboss.netty.handler.ssl.SslHandler
 
 
 class ScalatraPipelineFactory(implicit val applicationContext: AppContext) extends ChannelPipelineFactory {
 
-  private val applicationHandler = new ScalatraApplicationHandler
+  private lazy val applicationHandler = new ScalatraApplicationHandler
 
   def getPipeline = {
     val pipe = Channels.pipeline()
+    
+    applicationContext.server.sslContext foreach { ctxt =>
+      pipe.addLast("ssl", new SslHandler(ctxt.createSSLEngine()))
+    }
+    
     pipe.addLast("decoder", new HttpRequestDecoder)
-    pipe.addLast("aggregator", new HttpChunkAggregator(16 * 1024))
     pipe.addLast("encoder", new HttpResponseEncoder)
+    
+    applicationContext.server.contentCompression foreach { ctx =>
+      pipe.addLast("deflater", new HttpContentCompressor(ctx.level))
+    }
+
+    pipe.addLast("requestBuilder", new ScalatraRequestBuilder())
     pipe.addLast("sessions", applicationHandler)
     pipe.addLast("handler", new ScalatraRequestHandler)
     pipe

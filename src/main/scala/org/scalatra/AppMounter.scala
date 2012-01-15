@@ -5,6 +5,7 @@ import com.google.common.collect.MapMaker
 import collection.mutable.ConcurrentMap
 import collection.JavaConversions._
 import com.weiglewilczek.slf4s.Logging
+import util.PathManipulation
 
 
 trait Mountable extends PathManipulation with Initializable {

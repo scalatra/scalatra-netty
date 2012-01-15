@@ -387,7 +387,7 @@ trait ScalatraApp extends CoreDsl with Mountable {
    * The effective path against which routes are matched.
    */
   def requestPath = {
-    ensureSlash(request.path.replaceFirst(appPath, ""))
+    PathManipulationOps.ensureSlash(request.path.replaceFirst(appPath, ""))
   }
 
   /**
@@ -413,7 +413,7 @@ trait ScalatraApp extends CoreDsl with Mountable {
 //            if (request. == null)
 //              request.setCharacterEncoding(defaultCharacterEncoding)
 
-        val realMultiParams = request.parameterMap
+        val realMultiParams = request.parameters
         //response.charset(defaultCharacterEncoding)
         request(org.scalatra.ScalatraApp.MultiParamsKey) = realMultiParams
         executeRoutes()

@@ -4,57 +4,84 @@ import akka.util.Switch
 import scalax.file._
 import com.weiglewilczek.slf4s.Logging
 import collection.mutable.ListBuffer
+import scalaz._
+import Scalaz._
+import java.security.KeyStore
+import java.io.FileInputStream
+import javax.net.ssl.{KeyManagerFactory, SSLContext}
 
-trait PathManipulationOps {
-  protected def absolutizePath(path: String): String
-  protected def normalizePath(pth: String) = (ensureSlash _ compose absolutizePath _)(pth)
+object ServerCapability {
+  val DefaultPublicDirectory = PublicDirectory("public")
+  val DefaultDataDirectory = DataDirectory(DefaultPublicDirectory.path / "uploads")
+}
 
-  protected def ensureSlash(candidate: String) = {
-    (candidate.startsWith("/"), candidate.endsWith("/")) match {
-      case (true, true) => candidate.dropRight(1)
-      case (true, false) => candidate
-      case (false, true) => "/" + candidate.dropRight(1)
-      case (false, false) => "/" + candidate
+trait ServerCapability 
+case class SslSupport(
+             keystorePath: Path = sys.props("keystore.file.path"), 
+             keystorePassword: String = sys.props("keystore.file.password"),
+             algorithm: String = sys.props.get("ssl.KeyManagerFactory.algorithm").flatMap(_.blankOption) | "SunX509") extends ServerCapability
+case class ContentCompression(level: Int = 6) extends ServerCapability
+case class PublicDirectory(path: Path, cacheFiles: Boolean = true) extends ServerCapability
+case class TempDirectory(path: Path) extends ServerCapability
+case class DataDirectory(path: Path) extends ServerCapability
+
+case class ServerInfo(name: String, version: String = Version.version, port: Int = 8765, base: String = "/", capabilities: Seq[ServerCapability] = Seq.empty) {
+  
+  val publicDirectory = (capabilities find {
+    case _: PublicDirectory => true
+    case _ => false
+  }) some (_.asInstanceOf[PublicDirectory]) none ServerCapability.DefaultPublicDirectory
+
+  val dataDirectory = (capabilities find {
+    case _: DataDirectory => true
+    case _ => false
+  }) some (_.asInstanceOf[DataDirectory]) none ServerCapability.DefaultDataDirectory
+  
+  val tempDirectory = (capabilities find {
+    case _: TempDirectory => true
+    case _ => false
+  }) some (_.asInstanceOf[TempDirectory]) none TempDirectory(Path.createTempDirectory(prefix = "scalatra-tmp"))
+  
+  val sslContext = (capabilities find {
+    case _: SslSupport => true
+    case _ => false
+  }) map {
+    case cfg: SslSupport => { 
+      val ks = KeyStore.getInstance("JKS")
+      val fin = new FileInputStream(cfg.keystorePath.toAbsolute.path)
+      ks.load(fin, cfg.keystorePassword.toCharArray)
+      val kmf = KeyManagerFactory.getInstance(cfg.algorithm)
+      kmf.init(ks, cfg.keystorePassword.toCharArray)
+      val context = SSLContext.getInstance("TLS")
+      context.init(kmf.getKeyManagers, null, null)
+      context
     }
   }
-
-  protected def splitPaths(path: String) = {
-    val norm = normalizePath(path)
-    val parts = norm split "/"
-    (absolutizePath(parts dropRight 1 mkString "/"), parts.lastOption getOrElse "")
-  }
+  
+  val contentCompression = (capabilities find {
+    case _: ContentCompression => true
+    case _ => false
+  }) map (_.asInstanceOf[ContentCompression])
 }
 
-trait PathManipulation extends PathManipulationOps {
-  
-  def basePath: String
-  def pathName: String
-  lazy val appPath: String = absolutizePath(basePath) / pathName
-  
-  protected def absolutizePath(path: String): String = {
-    path.blankOption map (p => ensureSlash(if (p.startsWith("/")) p else appPath / p)) getOrElse appPath
-  }
-}
-
-case class ServerInfo(name: String, version: String, port: Int, base: String)
 object WebServer {
   val DefaultPath = "/"
   val DefaultPathName = ""
 }
 trait WebServer extends Logging with AppMounterLike {
 
-  def basePath = WebServer.DefaultPath
-  def publicDirectory: PublicDirectory
+  def info: ServerInfo
+  def capabilities = info.capabilities
+  def name = info.name
+  def version = info.version
+  def port = info.port
 
+  def basePath = info.base
   final val pathName = WebServer.DefaultPathName
 
-  val info = ServerInfo(name, version, port, normalizePath(appPath))
-  implicit val appContext = DefaultAppContext(info, AppMounter.newAppRegistry)
+  implicit lazy val appContext =
+    DefaultAppContext(info, AppMounter.newAppRegistry)
 
-  def name: String
-  def version: String
-  def port: Int
-  
   def mount[TheApp <: Mountable](app: => TheApp): AppMounter = mount("/", app)
 
   protected lazy val started = new Switch
@@ -62,6 +89,7 @@ trait WebServer extends Logging with AppMounterLike {
     started switchOn {
       initializeApps() // If we don't initialize the apps here there are race conditions
       startCallbacks foreach (_.apply())
+      sys.addShutdownHook(stop())
     }
   }
   

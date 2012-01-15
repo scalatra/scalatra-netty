@@ -3,29 +3,28 @@ package org.scalatra
 import collection.mutable
 import collection.{GenTraversableOnce, MapProxyLike}
 import collection.JavaConversions._
-import java.security.SecureRandom
 import com.google.common.collect.MapMaker
+import java.security.SecureRandom
 
 object GenerateId {
   def apply(): String = {
     generate()
   }
 
-  private def hexEncode(bytes: Array[Byte]) =  ((new StringBuilder(bytes.length * 2) /: bytes) { (sb, Any) =>
-    if((Any.toInt & 0xff) < 0x10) sb.append("0")
-    sb.append(Integer.toString(Any.toInt & 0xff, 16))
-  }).toString
+  private def random = new SecureRandom
 
   protected def generate() = {
     val tokenVal = new Array[Byte](20)
-    (new SecureRandom).nextBytes(tokenVal)
-    hexEncode(tokenVal)
+    random.nextBytes(tokenVal)
+    tokenVal.hexEncode
   }
 }
 
 trait HttpSessionMeta[SessionType <: HttpSession] {
   def empty: SessionType
 }
+
+
 trait HttpSession extends mutable.ConcurrentMap[String, Any] with mutable.MapLike[String, Any, HttpSession] {
   protected implicit def map2gmap(mmap: scala.collection.Map[String, Any]) = new MapMaker().makeMap[String, Any]() ++= mmap
 //  protected implicit def mmap2gmap(mmap: mutable.Map[String, Any]) = new MapMaker().makeMap[String, Any]() ++= mmap
@@ -82,7 +81,7 @@ trait HttpSession extends mutable.ConcurrentMap[String, Any] with mutable.MapLik
 }
 
 object InMemorySession extends HttpSessionMeta[InMemorySession] {
-  private val factory = new MapMaker
+  private val factory = new MapMaker()
   def empty = new InMemorySession(factory.makeMap[String, Any])
 }
 class InMemorySession(val self: mutable.ConcurrentMap[String, Any]) extends HttpSession {

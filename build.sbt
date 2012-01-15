@@ -1,5 +1,13 @@
 import akka.sbt._
 
+organization := "org.scalatra"
+
+organizationHomepage := Some(url("http://scalatra.org"))
+
+organizationName := "Scalatra"
+
+name := "scalatra-netty"
+
 resolvers += "ScalaTools Snapshots nexus" at "http://nexus.scala-tools.org/content/repositories/snapshots"
 
 resolvers += "repository.jboss.org" at "https://repository.jboss.org/nexus/content/repositories/releases/"
@@ -30,5 +38,7 @@ ivyXML := <dependencies>
     <exclude module="slf4j-log4j12" />
     <exclude module="slf4j-api-1.6.0"  />
   </dependencies>
+
+seq(VersionGenPlugin.allSettings :_*)
 
 seq(AkkaKernelPlugin.distSettings :_*)

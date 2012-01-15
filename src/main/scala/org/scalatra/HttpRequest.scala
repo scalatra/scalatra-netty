@@ -63,7 +63,7 @@ trait HttpRequest {
    * The version of the protocol the client used to send the request. Typically this will be something like "HTTP/1.0"
    * or "HTTP/1.1" and may be used by the application to determine how to treat any HTTP request headers.
    */
-  def serverProtocol: String
+  def serverProtocol: HttpVersion
 
   /**
    * A map corresponding to the client-supplied HTTP request headers.
@@ -95,7 +95,7 @@ trait HttpRequest {
   /**
    * A Map of the parameters of this request. Parameters are contained in the query string or posted form data.
    */
-  def parameterMap: ScalatraApp.MultiParams
+  def parameters: ScalatraApp.MultiParams
 
   def apply(key: String) = attributes(key)
   def update(key: String, value: Any) = attributes(key) = value

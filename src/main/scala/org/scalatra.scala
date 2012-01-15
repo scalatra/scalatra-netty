@@ -3,6 +3,7 @@ package org
 import scalatra.util.MultiMap
 import java.util.regex.Pattern
 import rl.UrlCodingUtils
+import com.google.common.base.{Function => GuavaFunction}
 
 
 package object scalatra extends Control {
@@ -19,6 +20,13 @@ package object scalatra extends Control {
   implicit def appMounter2app(appMounter: AppMounter): Mountable = appMounter.mounted
   implicit def app2AppMounter(app: Mountable): AppMounter = app.mounter.asInstanceOf[AppMounter]
 
+  implicit def extendedByteArray(bytes: Array[Byte]) = new {
+    def hexEncode =  ((new StringBuilder(bytes.length * 2) /: bytes) { (sb, b) =>
+        if((b.toInt & 0xff) < 0x10) sb.append("0")
+        sb.append(Integer.toString(b.toInt & 0xff, 16))
+      }).toString
+  }
+  
   implicit def extendedString(s: String) = new {
 
     def blankOption = if (isBlank) None else Some(s)
@@ -39,6 +47,9 @@ package object scalatra extends Control {
     def regexEscape = Pattern.quote(s)
 
   }
+  
+  implicit def scalaFunction2GoogleFunction[I, O](fn: I => O) =
+    new GuavaFunction[I,  O] { def apply(input: I) = fn(input) }
   
   implicit def int2StatusCode(code: Int) = code match {
     case 100 => ResponseStatus(100, "Continue")

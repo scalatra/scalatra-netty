@@ -6,11 +6,15 @@ import org.jboss.netty.handler.codec.http.HttpHeaders.Names
 import scalaz.Scalaz._
 import org.jboss.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
 import org.jboss.netty.buffer.{ChannelBuffers, ChannelBufferOutputStream}
-import org.jboss.netty.handler.codec.http2.{HttpHeaders, DefaultHttpResponse, HttpResponseStatus}
+import org.jboss.netty.handler.codec.http2.{HttpHeaders, DefaultHttpResponse, HttpResponseStatus, HttpVersion => JHttpVersion}
 
 class NettyHttpResponse(request: NettyHttpRequest, connection: ChannelHandlerContext) extends HttpResponse {
   
-  private val underlying = new DefaultHttpResponse(request.underlying.getProtocolVersion, HttpResponseStatus.OK)
+  private val underlying = new DefaultHttpResponse(nettyProtocol, HttpResponseStatus.OK)
+  private def nettyProtocol = request.serverProtocol match {
+    case Http10 => JHttpVersion.HTTP_1_0
+    case Http11 => JHttpVersion.HTTP_1_1
+  }
 
   def status = underlying.getStatus
   def status_=(status: ResponseStatus) = underlying.setStatus(status)

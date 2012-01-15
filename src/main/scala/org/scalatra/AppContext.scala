@@ -6,13 +6,61 @@ import collection.JavaConversions._
 import scalaz._
 import Scalaz._
 import com.weiglewilczek.slf4s.Logging
-import scalax.file.Path
+import util.PathManipulationOps
+import java.util.Locale
 
+object AppContext {
+  val Production = "production".intern
+  val Development = "development".intern
+  val Staging = "staging".intern
+  val Test = "test".intern
+
+  private val cloader = getClass.getClassLoader
+  private val environment = readEnvironmentKey(println _)
+
+  private def readEnvironmentKey(failWith: String ⇒ Unit = _ ⇒ null) = {
+    (ep("SCALATRA_MODE") orElse sp("scalatra.mode") orElse ep("AKKA_MODE") orElse sp("akka.mode")) getOrElse {
+      val inferred = "development"
+      failWith("no environment found, defaulting to: " + inferred)
+      inferred
+    }
+  }
+
+  def findInResources(fileName: String, ext: String) = {
+    val un = sys.props("user.name")
+    if (cloader.getResource("%s.%s.%s.%s".format(fileName, un, environment, ext)) != null)
+      Some("%s.%s.%s.%s".format(fileName, un, environment, ext))
+    else if (cloader.getResource("%s.%s.%s".format(fileName, un, ext)) != null)
+      Some("%s.%s.%s".format(fileName, un, ext))
+    else if (cloader.getResource("%s.%s.%s" format (fileName, environment, ext)) != null)
+      Some("%s.%s.%s" format (fileName, environment, ext))
+    else if (cloader.getResource("%s.%s" format (fileName, ext)) != null)
+      Some("%s.%s" format (fileName, ext))
+    else None
+  }
+
+  private def sp(key: String) = {
+    sys.props get key filter (_.nonBlank)
+  }
+  private def ep(key: String) = {
+    sys.env get key filter (_.nonBlank)
+  }
+
+}
 trait AppContext extends Logging {
 
   implicit def applications: AppMounter.ApplicationRegistry
   def server: ServerInfo
-  lazy val attributes: ConcurrentMap[String, Any] = new MapMaker().makeMap[String, Any]() 
+
+  lazy val attributes: ConcurrentMap[String, Any] = new MapMaker().makeMap[String, Any]()
+
+  import AppContext._
+  val mode = environment
+  def isProduction = isEnvironment(Production)
+  def isDevelopment = isEnvironment(Development)
+  def isStaging = isEnvironment(Staging)
+  def isTest = isEnvironment(Test)
+  def isEnvironment(env: String) = mode equalsIgnoreCase env
   
   def get(key: String) = attributes.get(key)
   def apply(key: String) = attributes(key)
@@ -59,8 +107,8 @@ trait AppContext extends Logging {
 
 }
 
-case class PublicDirectory(path: Path, cacheFiles: Boolean = true)
-case class DirectoryInfo(public: PublicDirectory, temp: Path, data: Path)
-case class DefaultAppContext(server: ServerInfo, applications: AppMounter.ApplicationRegistry) extends AppContext with PathManipulationOps {
-  protected def absolutizePath(path: String) = ensureSlash(if (path.startsWith("/")) path else server.base / path)
+case class DefaultAppContext(
+             server: ServerInfo,
+             applications: AppMounter.ApplicationRegistry) extends AppContext {
+  protected def absolutizePath(path: String) = PathManipulationOps.ensureSlash(if (path.startsWith("/")) path else server.base / path)
 }
