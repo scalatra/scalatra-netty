@@ -138,6 +138,7 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
   private def overflowToFile(chunk: HttpChunk) = {
     val tmpFile = File.createTempFile("sclatra-tmp", null, new File(appContext.server.tempDirectory.path.toAbsolute.path))
     new FileOutputStream(tmpFile).getChannel.write(request.getContent.toByteBuffer)
+    request.setContent(null)
     tmpFile.deleteOnExit()
     filesToDelete += tmpFile
     tmpFile.some
@@ -172,7 +173,12 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
   
   private def headers = Map((request.getHeaders map { e => e.getKey -> e.getValue.blankOption.orNull }):_*)
   
-  private def inputStream = new ChannelBufferInputStream(request.getContent)
+  private def inputStream = {
+    if (bodyBuffer.isEmpty)
+      new ChannelBufferInputStream(request.getContent)
+    else
+      new FileInputStream(bodyBuffer.get)
+  }
   
   private def serverProtocol = request.getProtocolVersion match {
     case JHttpVersion.HTTP_1_0 => Http10
