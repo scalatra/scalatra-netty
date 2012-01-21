@@ -2,6 +2,7 @@ package org.scalatra
 
 import java.io.{InputStream, File}
 import java.nio.charset.Charset
+import io.Codec
 
 
 trait HttpFile {
@@ -9,6 +10,7 @@ trait HttpFile {
   def name: String
   def contentType: String
   def size: Long
+  def charset: Charset = Codec.UTF8
 
   def inputStream: InputStream
   def bytes: Array[Byte]

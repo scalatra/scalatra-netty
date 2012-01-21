@@ -6,10 +6,12 @@ import Locale.ENGLISH
 import com.ning.http.client._
 import java.nio.charset.Charset
 import java.io.InputStream
-import scalax.io.{Codec, Resource}
+import scalax.io.{Codec => Codecx, Resource}
 import collection.JavaConversions._
 import java.net.URI
 import rl.MapQueryString
+import io.Codec
+import org.jboss.netty.handler.codec.http2.HttpHeaders.Names
 
 object StringHttpMethod {
   val GET = "GET"
@@ -38,7 +40,7 @@ abstract class ClientResponse {
   def statusCode = status.code
   def statusText = status.line
   def body = {
-    if (_body == null) _body = Resource.fromInputStream(inputStream).slurpString(Codec(charset))
+    if (_body == null) _body = Resource.fromInputStream(inputStream).slurpString(Codecx(charset))
     _body
   }
 } 
@@ -70,10 +72,16 @@ class NettyClient(val host: String, val port: Int) extends Client {
     }
   }
   
-  private def addParameters(method: String, params: Iterable[(String, String)])(req: AsyncHttpClient#BoundRequestBuilder) = {
+  private def addParameters(method: String, params: Iterable[(String, String)], isMultipart: Boolean = false, charset: Charset = Codec.UTF8)(req: AsyncHttpClient#BoundRequestBuilder) = {
     method.toUpperCase(ENGLISH) match {
       case `GET` | `DELETE` | `HEAD` | `OPTIONS` ⇒ params foreach { case (k, v) ⇒ req addQueryParameter (k, v) }
-      case `PUT` | `POST`   | `PATCH`            ⇒ params foreach { case (k, v) ⇒ req addParameter (k, v) }
+      case `PUT` | `POST`   | `PATCH`            ⇒ {
+        if (!isMultipart)
+          params foreach { case (k, v) ⇒ req addParameter (k, v) }
+        else {
+          params foreach { case (k, v) => req addBodyPart new StringPart(k, v, charset.name)}
+        }
+      }
       case _                                     ⇒ // we don't care, carry on
     }
     req
@@ -88,8 +96,14 @@ class NettyClient(val host: String, val port: Int) extends Client {
 
   def submit[A](method: String, uri: String, params: Iterable[(String, String)], headers: Map[String, String], body: String)(f: => A) = {
     val u = URI.create(uri)
+    val isMultipart = {
+      val ct = headers.getOrElse(Names.CONTENT_TYPE, "application/x-www-form-urlencoded")
+      ct.toLowerCase(Locale.ENGLISH).startsWith("multipart/form-data")
+    } 
     val reqUri = if (u.isAbsolute) u else new URI("http", null, host, port, u.getPath, u.getQuery, u.getFragment)
-    val req = (requestFactory(method) andThen (addHeaders(headers) _) andThen (addParameters(method, params) _))(reqUri.toASCIIString)
+    val req = (requestFactory(method)
+      andThen (addHeaders(headers) _)
+      andThen (addParameters(method, params, isMultipart) _))(reqUri.toASCIIString)
     u.getQuery.blankOption foreach { uu =>  
       MapQueryString.parseString(uu) foreach { case (k, v) => v foreach { req.addQueryParameter(k, _) } }
     }
