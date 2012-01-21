@@ -97,6 +97,8 @@ trait HttpRequest {
    */
   def parameters: ScalatraApp.MultiParams
 
+  def files: Map[String, HttpFile]
+
   def apply(key: String) = attributes(key)
   def update(key: String, value: Any) = attributes(key) = value
 }

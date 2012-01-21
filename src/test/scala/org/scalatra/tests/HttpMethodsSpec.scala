@@ -25,11 +25,11 @@ class HttpMethodsApp extends ScalatraApp {
   }
   
   post("/upload") {
-    "uploaded"
+    request.files get "textfile.txt" some (_.string) none "failed"
   }
   
   post("/upload-multi") {
-
+    request.files.values map (_.string) mkString "\n"
   }
   
   put("/update") {
@@ -41,9 +41,13 @@ class HttpMethodsApp extends ScalatraApp {
       params('first) + " " + params('last)
     else "failed"
   }
-  
-  put("/update_upload") {
-    "uploaded too"
+
+  put("/update-upload") {
+    request.files get "textfile.txt" some (_.string) none "failed"
+  }
+
+  put("/update-upload-multi") {
+    request.files.values map (_.string) mkString "\n"
   }
   
   delete("/delete/:id") {
@@ -68,6 +72,16 @@ class HttpMethodsApp extends ScalatraApp {
     else "failed"
   }
 
+
+  patch("/patch-upload") {
+    request.files get "textfile.txt" some (_.string) none "failed"
+  }
+
+  patch("/patch-upload-multi") {
+    request.files.values map (_.string) mkString "\n"
+  }
+
+
 }
 
 class HttpMethodsSpec extends ScalatraSpec {
@@ -83,11 +97,16 @@ class HttpMethodsSpec extends ScalatraSpec {
       "allow delete requests" ! deleteRequest ^
       "allow url encoded posts" ! formEncodedPosts ^
       "allow multipart encoded posts" ! multipartEncodedPosts ^
-      "allow single file posts" ! singleFilePost ^
+      "allow single file post upload" ! singleFilePost ^
+      "allow multi file post upload" ! multiFilePost ^
       "allow url encoded puts" ! formEncodedPuts ^
       "allow multipart encoded puts" ! multipartEncodedPuts ^
+      "allow single file put upload" ! singleFilePut ^
+      "allow multi file put upload" ! multiFilePut ^
       "allow url encoded patches" ! formEncodedPatches ^
       "allow multipart encoded patches" ! multipartEncodedPatches ^
+      "allow single file patch upload" ! singleFilePatch ^
+      "allow multi file patch upload" ! multiFilePatch ^
     end
 
 
@@ -99,14 +118,19 @@ class HttpMethodsSpec extends ScalatraSpec {
   val text2 = "textfile2.txt"
 
   def singleFilePost = {
-    pending
-//    post("/upload", classpathFile(text1)) {
-//      response.body must_== smallExpected1
-//    }
+    post("/upload", classpathFile(text1)) {
+      response.body must_== smallExpected1
+    }
+  }
+
+  def multiFilePost = {
+    post("/upload-multi", Seq(classpathFile(text1), classpathFile(text2))) {
+      response.body must_== (smallExpected1 + "\n" + smallExpected3)
+    }
   }
 
   def formEncodedPosts = {
-    post("/urlencode", Map("first" -> "hello", "last" -> "world")) {
+    post("/urlencode", "first" -> "hello", "last" -> "world") {
       response.body must_== "hello world"
     }
   }
@@ -118,7 +142,7 @@ class HttpMethodsSpec extends ScalatraSpec {
   }
 
   def formEncodedPuts = {
-    put("/update", Map("first" -> "hello", "last" -> "world")) {
+    put("/update", "first" -> "hello", "last" -> "world") {
       response.body must_== "hello world"
     }
   }
@@ -129,8 +153,32 @@ class HttpMethodsSpec extends ScalatraSpec {
     }
   }
 
+  def singleFilePut = {
+    put("/update-upload", classpathFile(text1)) {
+      response.body must_== smallExpected1
+    }
+  }
+
+  def multiFilePut = {
+    put("/update-upload-multi", Seq(classpathFile(text1), classpathFile(text2))) {
+      response.body must_== (smallExpected1 + "\n" + smallExpected3)
+    }
+  }
+
+  def singleFilePatch = {
+    patch("/patch-upload", classpathFile(text1)) {
+      response.body must_== smallExpected1
+    }
+  }
+
+  def multiFilePatch = {
+    patch("/patch-upload-multi", Seq(classpathFile(text1), classpathFile(text2))) {
+      response.body must_== (smallExpected1 + "\n" + smallExpected3)
+    }
+  }
+
   def formEncodedPatches = {
-    patch("/patching", Map("first" -> "hello", "last" -> "world")) {
+    patch("/patching", "first" -> "hello", "last" -> "world") {
       response.body must_== "hello world"
     }
   }

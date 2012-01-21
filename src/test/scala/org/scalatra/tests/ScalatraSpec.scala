@@ -12,6 +12,9 @@ trait ScalatraSpec extends Specification with Client {
 
   val server = NettyServer(FreePort.randomFreePort(), PublicDirectory("src/test/webapp"))
   val serverClient: Client = new NettyClient("127.0.0.1", server.port)
+  
+  protected implicit def fileToSeq(file: File): Seq[File] = Seq(file)
+    
 
   def mount[TheApp <: Mountable](mountable: => TheApp) {
     server.mount(mountable)

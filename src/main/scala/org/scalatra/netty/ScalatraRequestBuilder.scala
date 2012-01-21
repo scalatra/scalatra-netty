@@ -194,6 +194,7 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
           (container + (d.getName -> (Seq(d.getValue) ++ container(d.getName))), files)
         }
         case d: FileUpload if d.getHttpDataType == HttpDataType.FileUpload => {
+          logger debug "Receiving file: %s".format(d.getName)
           (container, files + (d.getName -> new NettyHttpFile(d)))
         }
         case _ => acc

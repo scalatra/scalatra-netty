@@ -44,9 +44,9 @@ trait Client {
     submit("HEAD", uri, params, headers) { f }
 
   def post[A](uri: String, params: Tuple2[String, String]*)(f: => A): A =
-    post(uri, params)(f)
-  def post[A](uri: String, params: Iterable[(String,String)])(f: => A): A =
-    post(uri, params, Map[String, String](), Seq.empty)(f)
+    post(uri, params, Map.empty[String, String])(f)
+  def post[A](uri: String, files: Iterable[File])(f: => A): A =
+    post(uri, Seq.empty, Map[String, String](), files.toSeq)(f)
   def post[A](uri: String, files: Seq[File], headers: Map[String,String])(f: => A): A =
     post(uri, Seq.empty, headers, files)(f)
   def post[A](uri: String, params: Iterable[(String,String)], headers: Map[String, String])(f: => A): A =
@@ -54,20 +54,20 @@ trait Client {
   def post[A](uri: String, params: Iterable[(String,String)], files: Seq[File])(f: => A): A =
     post(uri, params, Map[String, String](), files)(f)
   def post[A](uri: String, params: Iterable[(String,String)], headers: Map[String, String], files: Seq[File])(f: => A): A =
-    submit("POST", uri, params, defaultWriteContentType(Seq.empty) ++ headers, files)(f)
+    submit("POST", uri, params, defaultWriteContentType(files) ++ headers, files)(f)
   def post[A](uri: String, body: String = "", headers: Map[String, String] = Map.empty)(f: => A): A =
     submit("POST", uri, headers = defaultWriteContentType(Seq.empty) ++ headers, body = body)(f)
 
   def put[A](uri: String, params: Tuple2[String, String]*)(f: => A): A =
-    put(uri, params)(f)
-  def put[A](uri: String, params: Iterable[(String,String)])(f: => A): A =
-    put(uri, params, Map[String, String]())(f)
+    put(uri, params, Map.empty[String, String])(f)
+  def put[A](uri: String, files: Iterable[File])(f: => A): A =
+    put(uri, Seq.empty, Map[String, String](), files.toSeq)(f)
   def put[A](uri: String, params: Iterable[(String,String)], headers: Map[String, String])(f: => A): A =
     put(uri, params, headers, Seq.empty)(f)
   def put[A](uri: String, params: Iterable[(String,String)], files: Seq[File])(f: => A): A =
     put(uri, params, Map[String, String](), files)(f)
   def put[A](uri: String, params: Iterable[(String,String)], headers: Map[String, String], files: Seq[File])(f: => A): A =
-    submit("PUT", uri, params, defaultWriteContentType(Seq.empty) ++ headers, files)(f)
+    submit("PUT", uri, params, defaultWriteContentType(files) ++ headers, files)(f)
   def put[A](uri: String, body: String = "", headers: Map[String, String] = Map.empty)(f: => A) =
     submit("PUT", uri, headers = defaultWriteContentType(Seq.empty) ++ headers, body = body) { f }
 
@@ -84,9 +84,9 @@ trait Client {
     submit("CONNECT", uri, params, headers) { f }
 
   def patch[A](uri: String, params: Tuple2[String, String]*)(f: => A): A =
-    patch(uri, params)(f)
-  def patch[A](uri: String, params: Iterable[(String,String)])(f: => A): A =
-    patch(uri, params, Map[String, String]())(f)
+    patch(uri, params, Map.empty[String, String])(f)
+  def patch[A](uri: String, files: Iterable[File])(f: => A): A =
+    patch(uri, Seq.empty, Map[String, String](), files.toSeq)(f)
   def patch[A](uri: String, params: Iterable[(String,String)], headers: Map[String, String])(f: => A): A =
     patch(uri, params, headers, Seq.empty)(f)
   def patch[A](uri: String, params: Iterable[(String,String)], files: Seq[File])(f: => A): A =
@@ -99,6 +99,6 @@ trait Client {
 
   private[tests] def defaultWriteContentType(files: Seq[File]) = {
     val value = if (files.nonEmpty) "multipart/form-data" else "application/x-www-form-urlencoded; charset=utf-8"
-    Map(Names.CONTENT_TYPE -> value)
+    Map("Content-Type" -> value)
   }
 }
