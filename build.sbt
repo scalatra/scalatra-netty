@@ -21,6 +21,7 @@ libraryDependencies ++= Seq(
   "com.weiglewilczek.slf4s" %% "slf4s" % "1.0.7",
   "ch.qos.logback" % "logback-classic" % "1.0.0" % "provided",
   "eu.medsea.mimeutil" % "mime-util" % "2.1.3",
+  "com.googlecode.juniversalchardet" % "juniversalchardet" % "1.0.3",
   "net.iharder" % "base64" % "2.3.8",
   "com.ning" % "async-http-client" % "1.7.0",
   "org.scala-tools.time" %% "time" % "0.5",

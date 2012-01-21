@@ -3,15 +3,17 @@ package tests
 
 import java.util.Locale
 import Locale.ENGLISH
-import com.ning.http.client._
 import java.nio.charset.Charset
-import java.io.InputStream
 import scalax.io.{Codec => Codecx, Resource}
 import collection.JavaConversions._
 import java.net.URI
 import rl.MapQueryString
 import io.Codec
 import org.jboss.netty.handler.codec.http2.HttpHeaders.Names
+import java.io.{File, InputStream}
+import com.ning.http.client._
+import eu.medsea.mimeutil.MimeUtil2
+import util.{FileCharset, Mimes}
 
 object StringHttpMethod {
   val GET = "GET"
@@ -94,16 +96,23 @@ class NettyClient(val host: String, val port: Int) extends Client {
   
   private val allowsBody = Vector(PUT, POST, PATCH)
 
-  def submit[A](method: String, uri: String, params: Iterable[(String, String)], headers: Map[String, String], body: String)(f: => A) = {
+  def submit[A](method: String, uri: String, params: Iterable[(String, String)], headers: Map[String, String], files: Seq[File], body: String)(f: => A) = {
     val u = URI.create(uri)
     val isMultipart = {
-      val ct = headers.getOrElse(Names.CONTENT_TYPE, "application/x-www-form-urlencoded")
-      ct.toLowerCase(Locale.ENGLISH).startsWith("multipart/form-data")
+      allowsBody.contains(method.toUpperCase(Locale.ENGLISH)) && {
+        val ct = (defaultWriteContentType(files) ++ headers)(Names.CONTENT_TYPE)
+        ct.toLowerCase(Locale.ENGLISH).startsWith("multipart/form-data")
+      }
     } 
     val reqUri = if (u.isAbsolute) u else new URI("http", null, host, port, u.getPath, u.getQuery, u.getFragment)
     val req = (requestFactory(method)
       andThen (addHeaders(headers) _)
       andThen (addParameters(method, params, isMultipart) _))(reqUri.toASCIIString)
+    if (isMultipart) {
+      files foreach { file =>
+        req.addBodyPart(new FilePart(file.getName, file, Mimes(file), FileCharset(file).name))
+      }
+    } 
     u.getQuery.blankOption foreach { uu =>  
       MapQueryString.parseString(uu) foreach { case (k, v) => v foreach { req.addQueryParameter(k, _) } }
     }

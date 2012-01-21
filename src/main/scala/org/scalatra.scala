@@ -31,7 +31,7 @@ package object scalatra extends Control {
 
     def blankOption = if (isBlank) None else Some(s)
     def isBlank = s == null || s.trim.isEmpty
-    def nonBlank = s != null || s.trim.nonEmpty
+    def nonBlank = s != null && s.trim.nonEmpty
 
     def urlEncode = UrlCodingUtils.urlEncode(s)
     def formEncode = UrlCodingUtils.urlEncode(s, spaceIsPlus = true)

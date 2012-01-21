@@ -4,6 +4,9 @@ package tests
 import org.specs2.Specification
 import org.scalatra.netty.NettyServer
 import org.specs2.specification.{Step, Fragments}
+import scala.util.control.Exception._
+import java.io.{File, FileNotFoundException}
+import java.net.{URI, URISyntaxException}
 
 trait ScalatraSpec extends Specification with Client {
 
@@ -29,8 +32,17 @@ trait ScalatraSpec extends Specification with Client {
 
   override def map(fs: => Fragments) = Step(startScalatra) ^ super.map(fs) ^ Step(stopScalatra)
 
-  def submit[A](method: String, uri: String, params: Iterable[(String, String)], headers: Map[String, String], body: String)(f: => A) =
-    serverClient.submit(method, uri, params, headers, body){
+  def submit[A](method: String, uri: String, params: Iterable[(String, String)], headers: Map[String, String], files: Seq[File], body: String)(f: => A) =
+    serverClient.submit(method, uri, params, headers, files, body){
       withResponse(serverClient.response)(f)
     }
+  
+  def classpathFile(path: String) = {
+    val cl = allCatch.opt(Thread.currentThread.getContextClassLoader) getOrElse getClass.getClassLoader
+    try{
+      new File(new URI(cl.getResource(path).toString).getSchemeSpecificPart)
+    } catch {
+      case e: URISyntaxException => throw new FileNotFoundException(path)
+    }
+  }
 }

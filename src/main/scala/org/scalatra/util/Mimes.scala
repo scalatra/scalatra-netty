@@ -89,4 +89,8 @@ trait Mimes { self: Logging =>
   }
 }
 
-object Mimes extends Logging with Mimes
+object Mimes extends Logging with Mimes {
+  def apply(input: InputStream) = inputStreamMime(input)
+  def apply(file: File) = fileMime(file)
+  def apply(bytes: Array[Byte]) = bytesMime(bytes)
+}

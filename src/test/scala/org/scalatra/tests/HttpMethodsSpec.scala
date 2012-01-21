@@ -28,6 +28,10 @@ class HttpMethodsApp extends ScalatraApp {
     "uploaded"
   }
   
+  post("/upload-multi") {
+
+  }
+  
   put("/update") {
     params("first") + " " + params("last")
   }
@@ -79,6 +83,7 @@ class HttpMethodsSpec extends ScalatraSpec {
       "allow delete requests" ! deleteRequest ^
       "allow url encoded posts" ! formEncodedPosts ^
       "allow multipart encoded posts" ! multipartEncodedPosts ^
+      "allow single file posts" ! singleFilePost ^
       "allow url encoded puts" ! formEncodedPuts ^
       "allow multipart encoded puts" ! multipartEncodedPuts ^
       "allow url encoded patches" ! formEncodedPatches ^
@@ -93,6 +98,13 @@ class HttpMethodsSpec extends ScalatraSpec {
   val gzipText = "gzip.txt.gz"
   val text2 = "textfile2.txt"
 
+  def singleFilePost = {
+    pending
+//    post("/upload", classpathFile(text1)) {
+//      response.body must_== smallExpected1
+//    }
+  }
+
   def formEncodedPosts = {
     post("/urlencode", Map("first" -> "hello", "last" -> "world")) {
       response.body must_== "hello world"
@@ -100,7 +112,7 @@ class HttpMethodsSpec extends ScalatraSpec {
   }
   
   def multipartEncodedPosts = {
-    post("/multipart", Map("first" -> "hello2", "last" -> "world2"), Map("Content-Type" -> "multipart/form-data") ) {
+    post("/multipart", Map("first" -> "hello2", "last" -> "world2"), headers = Map("Content-Type" -> "multipart/form-data") ) {
       response.body must_== "hello2 world2"
     }
   }
