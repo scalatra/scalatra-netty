@@ -8,6 +8,7 @@ import scala.io.Codec
 import io._
 import scala.util.DynamicVariable
 import collection.mutable.ListBuffer
+import com.weiglewilczek.slf4s.Logger
 
 trait MultiParamsDef {
   type MultiParams <: Map[String, _ <: Seq[String]]
@@ -28,6 +29,8 @@ trait ScalatraApp extends CoreDsl with Mountable {
 
   import ScalatraApp._
 
+  
+  private val _scalatraLog = Logger(getClass)
   def isEmpty = false
 
   def name = getClass.getName
@@ -57,9 +60,19 @@ trait ScalatraApp extends CoreDsl with Mountable {
 
   def hasMatchingRoute(req: HttpRequest) = {
     _request.withValue(req) {
+      _scalatraLog.trace("Matching request for path: %s" format requestPath)
+      _scalatraLog.trace("app.path: " + appPath)
+      _scalatraLog.trace("request.path: " + request.path)
+      _scalatraLog.trace("request.uri: " + request.uri.toASCIIString)
       val mm = routes.matchingMethods
+      _scalatraLog.trace("Matching methods")
+      _scalatraLog.trace(mm.toString)
       val actual = mm flatMap (routes(_))
-      actual.filter(_().isDefined).nonEmpty
+      _scalatraLog.trace("actual")
+      _scalatraLog.trace(actual.toString)
+      val res = actual.filter(_().isDefined).nonEmpty
+      _scalatraLog.trace("we have a match for the path: %s" format res)
+      res
     }
   }
 

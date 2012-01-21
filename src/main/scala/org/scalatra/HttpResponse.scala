@@ -27,7 +27,7 @@ case class ResponseStatus(code: Int, message: String) extends Ordered[ResponseSt
 
 trait HttpResponse {
 
-  def headers: ConcurrentMap[String, String] = new MapMaker().makeMap[String, String]
+  lazy val headers: ConcurrentMap[String, String] = new MapMaker().makeMap[String, String]
 
   def status: ResponseStatus
   def status_=(status: ResponseStatus)

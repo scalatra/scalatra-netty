@@ -39,7 +39,18 @@ trait ScalatraSpec extends Specification with Client {
     serverClient.submit(method, uri, params, headers, files, body){
       withResponse(serverClient.response)(f)
     }
-  
+
+
+  override def session[A](f: => A) = {
+    serverClient._cookies.withValue(Nil) {
+      serverClient._useSession.withValue(true) {
+        _cookies.withValue(serverClient.cookies) {
+          _useSession.withValue(serverClient.useSession)(f)
+        }
+      }
+    }
+  }
+
   def classpathFile(path: String) = {
     val cl = allCatch.opt(Thread.currentThread.getContextClassLoader) getOrElse getClass.getClassLoader
     try{

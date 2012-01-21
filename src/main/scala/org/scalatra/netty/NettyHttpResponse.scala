@@ -29,6 +29,7 @@ class NettyHttpResponse(request: NettyHttpRequest, connection: ChannelHandlerCon
   var charset = Codec.UTF8
 
   val outputStream  = new ChannelBufferOutputStream(ChannelBuffers.dynamicBuffer())
+
   def end() = {
     headers foreach { case (k, v) => underlying.addHeader(k, v) }
     request.cookies.responseCookies foreach { cookie => underlying.addHeader(Names.SET_COOKIE, cookie.toCookieString) }

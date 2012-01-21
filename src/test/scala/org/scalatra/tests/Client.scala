@@ -10,8 +10,8 @@ import java.io.File
 trait Client {
 
   private val _response = new DynamicVariable[ClientResponse](null)
-  private val _cookies = new DynamicVariable[Seq[HttpCookie]](Nil)
-  private val _useSession = new DynamicVariable(false)
+  private[scalatra] val _cookies = new DynamicVariable[Seq[HttpCookie]](Nil)
+  private[scalatra] val _useSession = new DynamicVariable(false)
 
   lazy val charset = Charset.defaultCharset()
   def start() {}
@@ -21,9 +21,10 @@ trait Client {
    * Returns the current response within the scope of the submit method.
    */
   def response: ClientResponse = _response.value
-  def cookies = response.cookies
+  def cookies = _cookies.value
   def useSession = _useSession.value
   def body = response.body
+  def headers = response.headers
   def status = response.status
 
   protected def withResponse[A](res: ClientResponse)(f: => A): A = {

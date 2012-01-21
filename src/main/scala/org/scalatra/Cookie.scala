@@ -56,7 +56,7 @@ case class Cookie(name: String, value: String)(implicit val cookieOptions: Cooki
 class CookieJar(private val reqCookies: Map[String, RequestCookie]) {
   private lazy val cookies = mutable.HashMap[String, HttpCookie]() ++ reqCookies
 
-  def get(key: String) = cookies.get(key) map (_.value)
+  def get(key: String) = cookies.get(key) filter (_.cookieOptions.maxAge != 0) map (_.value)
 
   def apply(key: String) = get(key) getOrElse (throw new Exception("No cookie could be found for the specified key [%s]" format key))
 

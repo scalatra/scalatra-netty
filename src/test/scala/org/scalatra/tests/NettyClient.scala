@@ -14,6 +14,7 @@ import java.io.{File, InputStream}
 import com.ning.http.client._
 import eu.medsea.mimeutil.MimeUtil2
 import util.{FileCharset, Mimes}
+import java.lang.Throwable
 
 object StringHttpMethod {
   val GET = "GET"
@@ -114,7 +115,7 @@ class NettyClient(val host: String, val port: Int) extends Client {
       }
     } 
     if (useSession && cookies.size > 0) {
-      cookies.values foreach { cookie =>
+      cookies foreach { cookie =>
         val ahcCookie = new Cookie(
           cookie.cookieOptions.domain,
           cookie.name, cookie.value,
@@ -152,6 +153,12 @@ class NettyClient(val host: String, val port: Int) extends Client {
   }
   
   private def async = new AsyncCompletionHandler[ClientResponse] {
+
+
+    override def onThrowable(t: Throwable) {
+      t.printStackTrace()
+    }
+
     def onCompleted(response: Response) = new NettyClientResponse(response)
   }
 }

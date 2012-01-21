@@ -13,8 +13,8 @@ class CookiesTestApp extends ScalatraApp {
   }
 
   post("/setcookie") {
-    request.cookies.update("somecookie", params("cookieval"))
-    params.get("anothercookieval") foreach { request.cookies("anothercookie") = _ }
+    request.cookies update ("somecookie", params("cookieval"))
+    params.get("anothercookieval") foreach { request.cookies += "anothercookie" -> _ }
     "OK"
   }
 
@@ -27,17 +27,23 @@ class CookiesTestApp extends ScalatraApp {
   }
 
   post("/maplikeset") {
-    request.cookies += ("somecookie" -> params("cookieval"))
+    request.cookies += "somecookie" -> params("cookieval")
     "OK"
   }
 
   post("/remove-cookie") {
     request.cookies -= "somecookie"
     response.headers += "Somecookie-Is-Defined" -> request.cookies.get("somecookie").isDefined.toString
+    "OK"
   }
 
   post("/remove-cookie-with-path") {
-    request.cookies.delete("somecookie")(CookieOptions(path = "/bar"))
+    request.cookies.-=("somecookie")(CookieOptions(path = "/bar"))
+    "OK"
+  }
+
+  error {
+    case e => e.printStackTrace()
   }
 }
 
@@ -45,12 +51,20 @@ class CookieSupportSpec extends ScalatraSpec {
 
   mount("/foo", new CookiesTestApp)
 
-  def is =
+  def is = sequential ^
     "CookieSupport should" ^
       "GET /getcookie with no cookies set should return 'None'" ! noCookies ^
       "POST /setcookie with a value should return OK" ! setsCookie ^
       "GET /getcookie with a cookie should set return the cookie value" ! returnsSetCookie ^
-      end
+      "POST /setexpiringcookie should set the max age of the cookie" ! setsExpiringCookie ^
+      "cookie path defaults to app path" ! defaultsToAppPath ^
+      "cookie path defaults to app path when using a maplike setter" ! defaultToAppPathMap ^
+      "handles multiple cookies" ! handlesMultiple ^
+      "removes a cookie by setting max-age = 0" ! removesCookie ^
+      "removes a cookie by setting a path" ! removesCookieWithPath ^
+      "respects the HttpOnly option" ! supportsHttpOnly ^
+      "removing a cookie removes it from the map view" ! removingCookieRemovesFromMap ^
+    end
 
   def noCookies = {
     get("/foo/getcookie") {
@@ -67,83 +81,87 @@ class CookieSupportSpec extends ScalatraSpec {
 
   def returnsSetCookie = {
     session {
-      post("/foo/setcookie", "cookieval" -> "The value") {
+      val res1 = post("/foo/setcookie", "cookieval" -> "The value") {
         body must_== "OK"
       }
-      get("/foo/getcookie") {
+      val res2 = get("/foo/getcookie") {
         body must_== "The value"
+      }
+      res1 and res2
+    }
+  }
+
+  def setsExpiringCookie = {
+    post("/foo/setexpiringcookie", "cookieval" -> "The value", "maxAge" -> 604800.toString) {
+      response.headers("Set-Cookie") must_== """thecookie=The value; Max-Age=604800"""
+    }
+  }
+
+  def defaultsToAppPath = {
+    post("/foo/setcookie", "cookieval" -> "whatever") {
+      response.headers("Set-Cookie") must beMatching(".+;.*Path=/foo")
+    }
+  }
+
+  def defaultToAppPathMap = {
+    post("/foo/maplikeset", "cookieval" -> "whatever") {
+      val cookie = response.cookies("somecookie")
+
+      (cookie.value must_== "whatever") and (cookie.cookieOptions.path must_== "/foo")
+    }
+  }
+
+    // This is as much a test of ScalatraTests as it is of CookieSupport.
+    // http://github.com/scalatra/scalatra/issue/84
+  def handlesMultiple = {
+    session {
+      val res1 = post("/foo/setcookie", "cookieval" -> "The value", "anothercookieval" -> "Another Cookie") {
+        body must_== "OK"
+      }
+      val res2 = get("/foo/getcookie") {
+        (body must_== "The value") and
+        (headers.get("X-Another-Cookie") must_== Some("Another Cookie"))
+      }
+      res1 and res2
+    }
+  }
+
+  def removesCookie = {
+    post("/foo/remove-cookie") {
+      val hdr = response.headers("Set-Cookie")
+      // Jetty turns Max-Age into Expires
+      hdr must contain ("; Max-Age=0")
+    }
+  }
+
+  def removesCookieWithPath = {
+    post("/foo/remove-cookie-with-path") {
+      val hdr = response.headers("Set-Cookie")
+      // Jetty turns Max-Age into Expires
+      (hdr must contain("; Max-Age=0")) and
+      (hdr must contain("; Path=/bar"))
+    }
+  }
+
+  def supportsHttpOnly = {
+    post("/foo/set-http-only-cookie", "cookieval" -> "whatever") {
+      val hdr = response.headers("Set-Cookie")
+      hdr must beMatching(".+;.*HttpOnly")
+    }
+  }
+
+  def removingCookieRemovesFromMap = {
+    session {
+      post("/foo/setcookie", "cookieval" -> "whatever") {}
+      post("/foo/remove-cookie") {
+        headers("Somecookie-Is-Defined") must_== "false"
       }
     }
   }
 
+
   /*
-
-    // Jetty apparently translates Max-Age into Expires?
-    ignore("POST /setexpiringcookie should set the max age of the cookie") {
-      post("/foo/setexpiringcookie", "cookieval" -> "The value", "maxAge" -> oneWeek.toString) {
-        response.getHeader("Set-Cookie") must equal("""thecookie="The value"; Max-Age=604800""")
-      }
-    }
-
-    test("cookie path defaults to context path") {
-      post("/foo/setcookie", "cookieval" -> "whatever") {
-        response.getHeader("Set-Cookie") must include (";Path=/foo")
-      }
-    }
-
-    test("cookie path defaults to context path when using a maplike setter") {
-      post("/foo/maplikeset", "cookieval" -> "whatever") {
-        val hdr = response.getHeader("Set-Cookie")
-        hdr must startWith ("""somecookie=whatever;""")
-        hdr must include (";Path=/foo")
-      }
-    }
-
-    // This is as much a test of ScalatraTests as it is of CookieSupport.
-    // http://github.com/scalatra/scalatra/issue/84
-    test("handles multiple cookies") {
-      session {
-        post("/foo/setcookie", Map("cookieval" -> "The value", "anothercookieval" -> "Another Cookie")) {
-          body must equal("OK")
-        }
-        get("/foo/getcookie") {
-          body must equal("The value")
-          header("X-Another-Cookie") must equal ("Another Cookie")
-        }
-      }
-    }
-
-    test("respects the HttpOnly option") {
-      post("/foo/set-http-only-cookie", "cookieval" -> "whatever") {
-        val hdr = response.getHeader("Set-Cookie")
-        hdr must include (";HttpOnly")
-      }
-    }
-
-    test("removes a cookie by setting max-age = 0") {
-      post("/foo/remove-cookie") {
-        val hdr = response.getHeader("Set-Cookie")
-        // Jetty turns Max-Age into Expires
-        hdr must include (";Expires=Thu, 01-Jan-1970 00:00:00 GMT")
-      }
-    }
-
-    test("removes a cookie by setting a path") {
-      post("/foo/remove-cookie-with-path") {
-        val hdr = response.getHeader("Set-Cookie")
-        // Jetty turns Max-Age into Expires
-        hdr must include (";Expires=Thu, 01-Jan-1970 00:00:00 GMT")
-        hdr must include (";Path=/bar")
-      }
-    }
-
     test("removing a cookie removes it from the map view") {
-      session {
-        post("/foo/setcookie") {}
-        post("/foo/remove-cookie") {
-          header("Somecookie-Is-Defined") must be ("false")
-        }
-      }
     }
    */
 }
