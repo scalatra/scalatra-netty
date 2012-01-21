@@ -12,6 +12,7 @@
   </appender>
 
   <logger name="org.scalatra" level="INFO" />
+  <logger name="org.scalatra.netty" level="TRACE" />
   <root level="ERROR">
     <appender-ref ref="STDOUT"/>
     <!--<appender-ref ref="FLOWDOCK"/>-->

@@ -51,7 +51,7 @@ class CookieSupportSpec extends ScalatraSpec {
 
   mount("/foo", new CookiesTestApp)
 
-  def is = sequential ^
+  def is =
     "CookieSupport should" ^
       "GET /getcookie with no cookies set should return 'None'" ! noCookies ^
       "POST /setcookie with a value should return OK" ! setsCookie ^
