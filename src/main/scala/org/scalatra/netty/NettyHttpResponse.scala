@@ -20,7 +20,7 @@ class NettyHttpResponse(request: NettyHttpRequest, connection: ChannelHandlerCon
   def status_=(status: ResponseStatus) = underlying.setStatus(status)
 
   def contentType = {
-    underlying.getHeader(Names.CONTENT_TYPE).blankOption some identity none {
+    underlying.getHeader(Names.CONTENT_TYPE).blankOption | {
       underlying.setHeader(Names.CONTENT_TYPE, "text/plain")
       underlying.getHeader(Names.CONTENT_TYPE)
     }
@@ -31,6 +31,7 @@ class NettyHttpResponse(request: NettyHttpRequest, connection: ChannelHandlerCon
   val outputStream  = new ChannelBufferOutputStream(ChannelBuffers.dynamicBuffer())
   def end() = {
     headers foreach { case (k, v) => underlying.addHeader(k, v) }
+    request.cookies.responseCookies foreach { cookie => underlying.addHeader(Names.SET_COOKIE, cookie.toCookieString) }
     underlying.setContent(outputStream.buffer())
     val fut = connection.getChannel.write(underlying)
     if(!HttpHeaders.isKeepAlive(underlying) || !chunked) fut.addListener(ChannelFutureListener.CLOSE)

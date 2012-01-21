@@ -98,6 +98,9 @@ trait HttpRequest {
 
   def files: GenSeq[HttpFile]
 
+  def cookies: CookieJar
+  
+
   def apply(key: String) = attributes(key)
   def update(key: String, value: Any) = attributes(key) = value
 }

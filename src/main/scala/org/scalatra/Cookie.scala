@@ -29,7 +29,7 @@ trait HttpCookie {
     sb append name append "="
     sb append value
 
-    if(cookieOptions.domain != null && cookieOptions.domain.trim().nonEmpty) 
+    if(cookieOptions.domain.nonBlank)
       sb.append("; Domain=").append(ensureDotDomain.toLowerCase(Locale.ENGLISH))
 
     val pth = cookieOptions.path
@@ -60,25 +60,25 @@ class CookieJar(private val reqCookies: Map[String, RequestCookie]) {
 
   def update(name: String, value: String)(implicit cookieOptions: CookieOptions=CookieOptions()) = {
     cookies += name -> Cookie(name, value)
-    // TODO: actually add cookie to response
   }
 
   def set(name: String, value: String)(implicit cookieOptions: CookieOptions=CookieOptions()) = {
-    this.update(name, value)(cookieOptions)
+    this.update(name, value)
   }
 
-  def delete(name: String)(implicit cookieOptions: CookieOptions = CookieOptions()) {
-    cookies -= name
-    // TODO: actually remove cookie from response
+  def delete(name: String)(implicit cookieOptions: CookieOptions = CookieOptions(maxAge = 0)) {
+    this.update(name, "")(cookieOptions.copy(maxAge = 0))
   }
 
   def +=(keyValuePair: (String, String))(implicit cookieOptions: CookieOptions = CookieOptions()) = {
-    this.update(keyValuePair._1, keyValuePair._2)(cookieOptions)
+    this.update(keyValuePair._1, keyValuePair._2)
   }
 
-  def -=(key: String)(implicit cookieOptions: CookieOptions = CookieOptions()) {
-    delete(key)(cookieOptions)
+  def -=(key: String)(implicit cookieOptions: CookieOptions = CookieOptions(maxAge = 0)) {
+    delete(key)
   }
+  
+  private[scalatra] def responseCookies = cookies.values collect { case c: Cookie => c }
 
 }
 

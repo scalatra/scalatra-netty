@@ -61,6 +61,8 @@ trait AppContext extends Logging {
   def isStaging = isEnvironment(Staging)
   def isTest = isEnvironment(Test)
   def isEnvironment(env: String) = mode equalsIgnoreCase env
+
+  var sessionIdKey = "JSESSIONID"
   
   def get(key: String) = attributes.get(key)
   def apply(key: String) = attributes(key)

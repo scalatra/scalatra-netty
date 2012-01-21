@@ -10,6 +10,7 @@ trait SessionStore[SessionType <: HttpSession] extends mutable.MapProxy[String, 
   def newSession = {
     val sess = meta.empty
     self += sess.id -> sess
+    sess
   }
 }
 

@@ -11,6 +11,8 @@ import util.{PathManipulationOps, MultiMap}
 import java.io.InputStream
 import collection.GenSeq
 
+
+
 class NettyHttpRequest(
         val method: HttpMethod,
         val uri: URI, 
@@ -53,4 +55,5 @@ class NettyHttpRequest(
   val parameters = MultiMap(queryString ++ postParameters)
 
   protected[scalatra] def newResponse(ctx: ChannelHandlerContext) = new NettyHttpResponse(this, ctx)
+
 }

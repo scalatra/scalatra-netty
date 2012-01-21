@@ -8,7 +8,6 @@ import scala.io.Codec
 import io._
 import scala.util.DynamicVariable
 import collection.mutable.ListBuffer
-import java.util.regex.Pattern
 
 trait MultiParamsDef {
   type MultiParams <: Map[String, _ <: Seq[String]]

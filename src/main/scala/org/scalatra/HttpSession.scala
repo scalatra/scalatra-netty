@@ -29,7 +29,7 @@ trait HttpSession extends mutable.ConcurrentMap[String, Any] with mutable.MapLik
   protected implicit def map2gmap(mmap: scala.collection.Map[String, Any]) = new MapMaker().makeMap[String, Any]() ++= mmap
 //  protected implicit def mmap2gmap(mmap: mutable.Map[String, Any]) = new MapMaker().makeMap[String, Any]() ++= mmap
 
-  def self: mutable.ConcurrentMap[String, Any]
+  protected def self: mutable.ConcurrentMap[String, Any]
 
   def putIfAbsent(k: String, v: Any) = self.putIfAbsent(k, v)
 
@@ -84,6 +84,4 @@ object InMemorySession extends HttpSessionMeta[InMemorySession] {
   private val factory = new MapMaker()
   def empty = new InMemorySession(factory.makeMap[String, Any])
 }
-class InMemorySession(val self: mutable.ConcurrentMap[String, Any]) extends HttpSession {
-
-}
+class InMemorySession(protected val self: mutable.ConcurrentMap[String, Any]) extends HttpSession
