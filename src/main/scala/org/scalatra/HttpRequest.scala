@@ -1,10 +1,9 @@
 package org.scalatra
 
-import scala.collection.Map
-import scala.collection.mutable
 import java.io.{InputStream}
 import util.MultiMap
 import java.net.URI
+import collection.{GenSeq, Map, mutable}
 
 /**
  * A representation of an HTTP request.
@@ -97,7 +96,7 @@ trait HttpRequest {
    */
   def parameters: ScalatraApp.MultiParams
 
-  def files: Map[String, HttpFile]
+  def files: GenSeq[HttpFile]
 
   def apply(key: String) = attributes(key)
   def update(key: String, value: Any) = attributes(key) = value

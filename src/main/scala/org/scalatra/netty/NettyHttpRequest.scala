@@ -9,6 +9,7 @@ import org.jboss.netty.handler.codec.http.CookieDecoder
 import java.net.URI
 import util.{PathManipulationOps, MultiMap}
 import java.io.InputStream
+import collection.GenSeq
 
 class NettyHttpRequest(
         val method: HttpMethod,
@@ -16,7 +17,7 @@ class NettyHttpRequest(
         val headers: Map[String, String],
         val queryString: MultiMap,
         postParameters: MultiMap,
-        val files: Map[String, HttpFile],
+        val files: GenSeq[HttpFile],
         val serverProtocol: HttpVersion,
         val inputStream: InputStream)(implicit appContext: AppContext) extends HttpRequest {
 

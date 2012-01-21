@@ -2,10 +2,8 @@ package org.scalatra
 package tests
 
 import scala.util.DynamicVariable
-import java.net.URLEncoder.encode
 import java.nio.charset.Charset
 import java.io.File
-import org.jboss.netty.handler.codec.http2.HttpHeaders.Names
 
 trait Client {
 

@@ -23,13 +23,14 @@ class HttpMethodsApp extends ScalatraApp {
       params('first) + " " + params('last)
     else "failed"
   }
-  
+
+  private def readFiles(separator: String = "") = request.files map (_.string) mkString separator
   post("/upload") {
-    request.files get "textfile.txt" some (_.string) none "failed"
+    readFiles()
   }
   
   post("/upload-multi") {
-    request.files.values map (_.string) mkString "\n"
+    readFiles("\n")
   }
   
   put("/update") {
@@ -43,11 +44,11 @@ class HttpMethodsApp extends ScalatraApp {
   }
 
   put("/update-upload") {
-    request.files get "textfile.txt" some (_.string) none "failed"
+    readFiles()
   }
 
   put("/update-upload-multi") {
-    request.files.values map (_.string) mkString "\n"
+    readFiles("\n")
   }
   
   delete("/delete/:id") {
@@ -74,11 +75,11 @@ class HttpMethodsApp extends ScalatraApp {
 
 
   patch("/patch-upload") {
-    request.files get "textfile.txt" some (_.string) none "failed"
+    readFiles()
   }
 
   patch("/patch-upload-multi") {
-    request.files.values map (_.string) mkString "\n"
+    readFiles("\n")
   }
 
 

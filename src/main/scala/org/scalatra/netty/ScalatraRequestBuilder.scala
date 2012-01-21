@@ -146,7 +146,7 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
   
   private def scalatraRequest: HttpRequest = {
     if (isHtmlPost) {
-      val (parameters, files) = (postDecoder map readPostData) | (MultiMap(), Map.empty[String, HttpFile])
+      val (parameters, files) = (postDecoder map readPostData) | (MultiMap(), Seq.empty[HttpFile])
       new NettyHttpRequest(
         method,
         URI.create(request.getUri),
@@ -163,7 +163,7 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
         headers,
         queryString,
         MultiMap(),
-        Map.empty,
+        Seq.empty,
         serverProtocol,
         inputStream)
     }
@@ -186,8 +186,8 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
   }
   
   private def defaultMultiMap = MultiMap().withDefaultValue(Seq.empty)
-  private def readPostData(decoder: HttpPostRequestDecoder): (Map[String, Seq[String]], Map[String, HttpFile]) = {
-    decoder.getBodyHttpDatas.foldLeft((defaultMultiMap, Map.empty[String, HttpFile])) { (acc, data) =>
+  private def readPostData(decoder: HttpPostRequestDecoder): (Map[String, Seq[String]], Seq[HttpFile]) = {
+    decoder.getBodyHttpDatas.foldLeft((defaultMultiMap, Seq.empty[HttpFile])) { (acc, data) =>
       val (container, files) = acc
       data match {
         case d: Attribute if d.getHttpDataType == HttpDataType.Attribute => {
@@ -195,7 +195,7 @@ class ScalatraRequestBuilder(maxPostBodySize: Long = 2097152)(implicit val appCo
         }
         case d: FileUpload if d.getHttpDataType == HttpDataType.FileUpload => {
           logger debug "Receiving file: %s".format(d.getName)
-          (container, files + (d.getName -> new NettyHttpFile(d)))
+          (container, files :+ new NettyHttpFile(d))
         }
         case _ => acc
       }

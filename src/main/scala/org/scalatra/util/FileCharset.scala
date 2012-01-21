@@ -1,8 +1,7 @@
 package org.scalatra
 package util
 
-import org.mozilla.universalchardet.{CharsetListener, UniversalDetector}
-import java.lang.String
+import org.mozilla.universalchardet.UniversalDetector
 import java.io.{FileInputStream, File}
 import scalaz._
 import Scalaz._
