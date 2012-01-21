@@ -20,13 +20,9 @@ class ScalatraApplicationHandler(implicit val appContext: AppContext) extends Sc
       case req: NettyHttpRequest => {
         appContext.application(req) match {
           case Some(app: ScalatraApp with SessionSupport) => {
-            val current = try {
-              req.cookies get appContext.sessionIdKey flatMap sessions.get
-            } catch { case _ => println("Error when getting session"); None }
-            try { app.session_=(current | sessions.newSession) } catch { case _ => println("Error setting session")}
-            try {
-              if (current.isEmpty) req.cookies += appContext.sessionIdKey -> app.session.id
-            } catch { case _ => println("Error setting session cookie")}
+            val current = req.cookies get appContext.sessionIdKey flatMap sessions.get
+            app.session_=(current | sessions.newSession)
+            if (current.isEmpty) req.cookies += appContext.sessionIdKey -> app.session.id
           }
           case _ =>
         }
