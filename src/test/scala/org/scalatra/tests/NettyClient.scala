@@ -33,7 +33,7 @@ abstract class ClientResponse {
   def contentType: String  
   def charset: Charset 
   def inputStream: InputStream
-  def cookies: Map[String, org.scalatra.Cookie]
+  def cookies: Map[String, org.scalatra.HttpCookie]
   def headers: Map[String, String] 
   def uri: URI
   
@@ -113,6 +113,17 @@ class NettyClient(val host: String, val port: Int) extends Client {
         req.addBodyPart(new FilePart(file.getName, file, Mimes(file), FileCharset(file).name))
       }
     } 
+    if (useSession && cookies.size > 0) {
+      cookies.values foreach { cookie =>
+        val ahcCookie = new Cookie(
+          cookie.cookieOptions.domain,
+          cookie.name, cookie.value,
+          cookie.cookieOptions.path,
+          cookie.cookieOptions.maxAge,
+          cookie.cookieOptions.secure)
+        req.addCookie(ahcCookie)
+      }
+    }
     u.getQuery.blankOption foreach { uu =>  
       MapQueryString.parseString(uu) foreach { case (k, v) => v foreach { req.addQueryParameter(k, _) } }
     }
@@ -126,7 +137,7 @@ class NettyClient(val host: String, val port: Int) extends Client {
       val cko = CookieOptions(cookie.getDomain, cookie.getPath, cookie.getMaxAge)
       cookie.getName -> org.scalatra.Cookie(cookie.getName, cookie.getValue)(cko)
     }).toMap
-
+    
     val headers = (response.getHeaders.keySet() map { k => k -> response.getHeaders(k).mkString("; ")}).toMap
 
     val status = ResponseStatus(response.getStatusCode, response.getStatusText)

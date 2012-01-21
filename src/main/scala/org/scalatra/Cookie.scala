@@ -18,12 +18,17 @@ trait HttpCookie {
   implicit def cookieOptions: CookieOptions
   def name: String
   def value: String
-  
+
+}
+
+case class RequestCookie(name: String, value: String, cookieOptions: CookieOptions = CookieOptions()) extends HttpCookie
+case class Cookie(name: String, value: String)(implicit val cookieOptions: CookieOptions = CookieOptions()) extends HttpCookie {
+
   private def ensureDotDomain = if (!cookieOptions.domain.startsWith("."))
     "." + cookieOptions.domain
   else
     cookieOptions.domain
-  
+
   def toCookieString = {
     val sb = new StringBuffer
     sb append name append "="
@@ -45,11 +50,8 @@ trait HttpCookie {
     if (cookieOptions.httpOnly) sb append "; HttpOnly"
     sb.toString
   }
-  
-}
 
-case class RequestCookie(name: String, value: String, cookieOptions: CookieOptions = CookieOptions()) extends HttpCookie
-case class Cookie(name: String, value: String)(implicit val cookieOptions: CookieOptions = CookieOptions()) extends HttpCookie
+}
 
 class CookieJar(private val reqCookies: Map[String, RequestCookie]) {
   private lazy val cookies = mutable.HashMap[String, HttpCookie]() ++ reqCookies

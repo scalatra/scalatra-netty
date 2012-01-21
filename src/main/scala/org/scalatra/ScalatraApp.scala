@@ -32,6 +32,7 @@ trait ScalatraApp extends CoreDsl with Mountable {
 
   def name = getClass.getName
 
+  protected implicit lazy val cookieOptions = CookieOptions(path = appPath)
 
   override def toString = "ScalatraApp(%s,%s)" format (appPath, name)
 
@@ -239,8 +240,6 @@ trait ScalatraApp extends CoreDsl with Mountable {
    * outside `handle`.
    */
   def multiParams: MultiParams = {
-    println("Request attributes: ")
-    println(request.attributes)
     request.attributes.get(MultiParamsKey).get.asInstanceOf[MultiParams]
       .withDefaultValue(Seq.empty)
   }
