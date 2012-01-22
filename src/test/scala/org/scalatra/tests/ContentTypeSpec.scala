@@ -145,28 +145,28 @@ class ContentTypeSpec extends ScalatraSpec {
   }
 
   def contentTypeThreadSafety = {
-    pending
-//    import Actor._
-//
-//    def doRequest = actor {
-//      loop {
-//        react {
-//          case i: Int =>
-//            val http = new AsyncHttpClient
-//            val res = new NettyClientResponse(http.prepareGet("/concurrent/" + i).execute().get())
-//
-//            sender ! (i, res.mediaType)
-//            http.close()
-//            exit()
-//        }
-//      }
-//    }
-//
-//    val futures = for (i <- 1 to 2) yield { doRequest !! i }
-//    val result = for (future <- futures) yield (future() match {
-//        case (i: Int, mediaType: Option[_]) => mediaType must beSome(i.toString)
-//      })
-//    result reduce (_ and _)
-  }
+    import Actor._
 
+    def doRequest = actor {
+      loop {
+        react {
+          case i: Int =>
+            val http = new AsyncHttpClient
+            val res = new NettyClientResponse(http.prepareGet("http://localhost:%s/concurrent/".format(server.port) + i).execute().get())
+
+            sender ! (i, res.mediaType)
+            http.close()
+            exit()
+        }
+      }
+    }
+
+    val futures = for (i <- 1 to 2) yield { doRequest !! i }
+    val result = for (future <- futures) yield (future() match {
+        case (i: Int, mediaType: Option[_]) => mediaType must beSome(i.toString)
+      })
+    result reduce (_ and _)
+  }
+  
+  
 }
