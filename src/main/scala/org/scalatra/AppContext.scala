@@ -5,10 +5,10 @@ import com.google.common.collect.MapMaker
 import collection.JavaConversions._
 import scalaz._
 import Scalaz._
-import com.weiglewilczek.slf4s.Logging
-import util.PathManipulationOps
 import akka.util.duration._
 import akka.util.Duration
+import akka.actor.ActorSystem
+import util.{MimeTypes, PathManipulationOps}
 
 object AppContext {
   val Production = "production".intern
@@ -48,12 +48,14 @@ object AppContext {
   }
 
 }
-trait AppContext extends Logging {
+trait AppContext extends ScalatraLogging {
 
   implicit def applications: AppMounter.ApplicationRegistry
   def server: ServerInfo
 
   lazy val attributes: ConcurrentMap[String, Any] = new MapMaker().makeMap[String, Any]()
+
+  lazy val mimes = new MimeTypes
 
   import AppContext._
   val mode = environment
@@ -66,24 +68,26 @@ trait AppContext extends Logging {
   var sessionIdKey = "JSESSIONID"
   var sessionTimeout: Duration = 20.minutes
 
+  private[scalatra] val actorSystem = ActorSystem("scalatra")
+
   def get(key: String) = attributes.get(key)
   def apply(key: String) = attributes(key)
   def update(key: String, value: Any) = attributes(key) = value
   
   def application(req: HttpRequest): Option[ScalatraApp] = {
-    logger.trace("The registered applications:")
-    logger.trace("%s" format applications)
+    logger.debug("The registered applications:")
+    logger.debug("%s" format applications)
     application(req.uri.getPath) map (_.mounted) flatMap {
       case f: ScalatraApp if f.hasMatchingRoute(req) => {
-        logger.trace("We found an App")
+        logger.debug("We found an App")
         f.some
       }
       case f: ScalatraApp => {
-        logger.trace("We found an App, But no matching route")
+        logger.debug("We found an App, But no matching route")
         none[ScalatraApp]
       }
       case _ => {
-        logger.trace("No matching route")
+        logger.debug("No matching route")
         none[ScalatraApp]
       }
     }
@@ -114,5 +118,8 @@ trait AppContext extends Logging {
 case class DefaultAppContext(
              server: ServerInfo,
              applications: AppMounter.ApplicationRegistry) extends AppContext {
+
+  implicit val appContext = this
+
   protected def absolutizePath(path: String) = PathManipulationOps.ensureSlash(if (path.startsWith("/")) path else server.base / path)
 }

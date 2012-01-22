@@ -82,6 +82,10 @@ class NettyClient(val host: String, val port: Int) extends Client {
     def preparePatch(uri: String): AsyncHttpClient#BoundRequestBuilder = requestBuilder("PATCH", uri)
     def prepareTrace(uri: String): AsyncHttpClient#BoundRequestBuilder = requestBuilder("TRACE", uri)
   }
+  
+  private val mimes = new Mimes {
+    protected def warn(message: String) = System.err.println("[WARN] " + message)
+  } 
 
   override def stop() {
     underlying.close()
@@ -137,7 +141,7 @@ class NettyClient(val host: String, val port: Int) extends Client {
       andThen (addParameters(method, params, isMultipart) _))(reqUri.toASCIIString)
     if (isMultipart) {
       files foreach { file =>
-        req.addBodyPart(new FilePart(file.getName, file, Mimes(file), FileCharset(file).name))
+        req.addBodyPart(new FilePart(file.getName, file, mimes(file), FileCharset(file).name))
       }
     } 
     if (useSession && cookies.size > 0) {

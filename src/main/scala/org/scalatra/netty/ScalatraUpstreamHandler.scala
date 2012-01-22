@@ -5,10 +5,9 @@ import scala.io.Codec
 import org.jboss.netty.channel.{ExceptionEvent, ChannelHandlerContext, ChannelFutureListener, SimpleChannelUpstreamHandler}
 import org.jboss.netty.handler.codec.http2.{HttpResponseStatus, HttpVersion, DefaultHttpResponse}
 import org.jboss.netty.buffer.ChannelBuffers
-import com.weiglewilczek.slf4s.Logging
 import scala.util.control.Exception.ignoring
 
-abstract class ScalatraUpstreamHandler extends SimpleChannelUpstreamHandler with Logging {
+abstract class ScalatraUpstreamHandler extends SimpleChannelUpstreamHandler with ScalatraLogging {
 
   override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) {
     try {

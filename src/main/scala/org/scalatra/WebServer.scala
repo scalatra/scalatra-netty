@@ -2,7 +2,6 @@ package org.scalatra
 
 import akka.util.Switch
 import scalax.file._
-import com.weiglewilczek.slf4s.Logging
 import collection.mutable.ListBuffer
 import scalaz._
 import Scalaz._
@@ -73,7 +72,7 @@ object WebServer {
   val DefaultPath = "/"
   val DefaultPathName = ""
 }
-trait WebServer extends Logging with AppMounterLike {
+trait WebServer extends ScalatraLogging with AppMounterLike {
 
   def info: ServerInfo
   def capabilities = info.capabilities
@@ -111,6 +110,7 @@ trait WebServer extends Logging with AppMounterLike {
   final def stop() {
     started switchOff {
       stopCallbacks foreach (_.apply())
+      appContext.actorSystem.shutdown()
     }
   }
   

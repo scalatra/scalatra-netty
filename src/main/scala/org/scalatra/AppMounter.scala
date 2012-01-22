@@ -4,7 +4,6 @@ import java.net.URI
 import com.google.common.collect.MapMaker
 import collection.mutable.ConcurrentMap
 import collection.JavaConversions._
-import com.weiglewilczek.slf4s.Logging
 import util.PathManipulation
 
 
@@ -29,7 +28,7 @@ case class NullMountable() extends Mountable {
   def hasMatchingRoute(req: HttpRequest) = false
 }
 
-trait AppMounterLike extends PathManipulation { self: Logging =>
+trait AppMounterLike extends PathManipulation { self: ScalatraLogging =>
   implicit def appContext: AppContext
   
   def applications = appContext.applications
@@ -67,7 +66,7 @@ object AppMounter {
   type ApplicationRegistry = ConcurrentMap[String, AppMounter]
   def newAppRegistry: ApplicationRegistry = new MapMaker().makeMap[String, AppMounter]
 }
-final class AppMounter(val basePath: String, val pathName: String, app: => Mountable)(implicit val appContext: AppContext) extends Logging with AppMounterLike {
+final class AppMounter(val basePath: String, val pathName: String, app: => Mountable)(implicit val appContext: AppContext) extends ScalatraLogging with AppMounterLike {
   lazy val mounted = {
     val a = app
     a.mounter = this

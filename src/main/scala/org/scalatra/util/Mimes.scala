@@ -4,14 +4,13 @@ package util
 import eu.medsea.util.EncodingGuesser
 import eu.medsea.mimeutil.{ MimeType, MimeUtil2 }
 import collection.JavaConversions._
-import java.net.URL
 import java.io.{ InputStream, File }
-import com.weiglewilczek.slf4s.{Logger, Logging}
+import java.net.{URI, URL}
 
 /**
  * A utility to help with mime type detection for a given file path or url
  */
-trait Mimes { self: Logging =>
+trait Mimes { 
 
   lazy val DEFAULT_MIME = "application/octet-stream"
 
@@ -77,7 +76,7 @@ trait Mimes { self: Logging =>
       mimeDetect
     } catch {
       case e ⇒ {
-        logger.warn("There was an error detecting the mime type", e)
+        warn("There was an error detecting the mime type. " + e.getMessage)
         fallback
       }
     }
@@ -85,12 +84,18 @@ trait Mimes { self: Logging =>
 
   private def quiet(fn: ⇒ Unit) = {
     try { fn }
-    catch { case e ⇒ logger.warn("An error occurred while registering a mime type detector", e) }
+    catch { case e ⇒ warn("An error occurred while registering a mime type detector. " + e.getMessage) }
   }
-}
+  
+  protected def warn(message: String)
 
-object Mimes extends Logging with Mimes {
   def apply(input: InputStream) = inputStreamMime(input)
   def apply(file: File) = fileMime(file)
   def apply(bytes: Array[Byte]) = bytesMime(bytes)
+  def apply(uri: URI) = urlMime(uri.toASCIIString)
+}
+
+class MimeTypes(implicit val appContext: AppContext) extends ScalatraLogging with Mimes {
+
+  protected def warn(message: String) = logger warning message
 }

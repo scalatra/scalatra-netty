@@ -26,7 +26,8 @@ class InMemorySessionStoreSpec extends Specification with ScalaCheck { def is =
         def server = null
   
         implicit def applications = null
-        
+
+        implicit def appContext = this
       }
       ctxt.sessionTimeout = AkkaDuration(ttl, TimeUnit.SECONDS)
       ctxt

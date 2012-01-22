@@ -19,7 +19,7 @@ class ScalatraRequestHandler(implicit val appContext: AppContext) extends Scalat
         if (app.isDefined) {
           app.get(req, resp)
         } else {
-          logger warn  ("Couldn't match the request: %s" format req.uri.toASCIIString)
+          logger warning  ("Couldn't match the request: %s" format req.uri.toASCIIString)
           val resp = new DefaultHttpResponse(JHttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
           resp.setContent(ChannelBuffers.wrappedBuffer("Not Found".getBytes("UTF-8")))
           ctx.getChannel.write(resp).addListener(ChannelFutureListener.CLOSE)

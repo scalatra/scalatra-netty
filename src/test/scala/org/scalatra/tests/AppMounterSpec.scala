@@ -33,6 +33,8 @@ class AppMounterSpec extends Specification { def is =
     implicit val context = new AppContext {
       def server = ServerInfo("testserver", "0.0.1", 0, "")
 
+      implicit def appContext = this
+
       implicit val applications: AppMounter.ApplicationRegistry = new ConcurrentHashMap[String, AppMounter]
     }
     val root = new AppMounter("/", "", NullMountable())

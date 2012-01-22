@@ -4,7 +4,6 @@ import scala.util.matching.Regex
 import scala.util.parsing.combinator._
 import java.net.URLEncoder.encode
 import util.MultiMap
-import com.weiglewilczek.slf4s.Logging
 
 /**
  * A route matcher is evaluated in the context it was created and returns a
@@ -168,11 +167,11 @@ final class RailsRouteMatcher(pattern: String, requestPath: => String)
   }
 }
 
-final class PathPatternRouteMatcher(pattern: PathPattern, requestPath: => String)
-  extends RouteMatcher with Logging {
+final class PathPatternRouteMatcher(pattern: PathPattern, requestPath: => String)(implicit val appContext: AppContext)
+  extends RouteMatcher with ScalatraLogging {
 
   def apply() = {
-    logger trace ("The requestPath: %s and the pattern: %s" format (requestPath, pattern.regex.toString()))
+    logger debug ("The requestPath: %s and the pattern: %s" format (requestPath, pattern.regex.toString()))
     pattern(requestPath)
   }
     
@@ -184,8 +183,8 @@ final class PathPatternRouteMatcher(pattern: PathPattern, requestPath: => String
  * A route matcher for regular expressions.  Useful for cases that are
  * more complex than are supported by Sinatra- or Rails-style routes.
  */
-final class RegexRouteMatcher(regex: Regex, requestPath: => String)
-  extends RouteMatcher with Logging {
+final class RegexRouteMatcher(regex: Regex, requestPath: => String)(implicit val appContext: AppContext)
+  extends RouteMatcher with ScalatraLogging {
 
   /**
    * Evaluates the request path against the regular expression.
@@ -194,7 +193,7 @@ final class RegexRouteMatcher(regex: Regex, requestPath: => String)
    * captured groups in a "captures" variable.  Otherwise, returns None.
    */
   def apply() = {
-    logger trace ("the request path: %s and the regex: %s".format(requestPath, regex.pattern.toString))
+    logger debug ("the request path: %s and the regex: %s".format(requestPath, regex.pattern.toString))
     regex.findFirstMatchIn(requestPath) map { _.subgroups match {
       case Nil => MultiMap()
       case xs => Map("captures" -> xs)

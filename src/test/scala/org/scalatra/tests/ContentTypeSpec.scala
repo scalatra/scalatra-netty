@@ -168,5 +168,5 @@ class ContentTypeSpec extends ScalatraSpec {
     result reduce (_ and _)
   }
   
-  
+
 }
