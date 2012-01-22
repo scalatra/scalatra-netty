@@ -113,6 +113,15 @@ trait WebServer extends Logging with AppMounterLike {
       stopCallbacks foreach (_.apply())
     }
   }
+  
+  def apply[TheApp <: Mountable](app: => TheApp) = {
+    mount("/", app)
+    this
+  }
+  def apply[TheApp <: Mountable](path: String, app: => TheApp) = {
+    mount(path, app)
+    this
+  }
 
 
 }

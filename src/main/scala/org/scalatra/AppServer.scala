@@ -4,17 +4,19 @@ import netty.{NettyServer}
 
 object AppServer extends App {
 
-  val server = NettyServer( PublicDirectory("src/main/webapp"))
-  server.mount(new ScalatraApp {
-    get("/hello") { "world" }
-    get("/") { "It works!" }
+  // mounts the app in the block as a root application
+  val server = NettyServer( PublicDirectory("src/main/webapp")) {
+    new ScalatraApp {
+      get("/hello") { "world" }
+      get("/") { "It works!" }
 
-    mount("blah", new ScalatraApp  {
-      get("/") {
-        "index mounted under /blah"
-      }
-    })
-  })
+      mount("blah", new ScalatraApp  {
+        get("/") {
+          "index mounted under /blah"
+        }
+      })
+    }
+  }
   server.start()
   println("The servers started on %d" format server.port)
 }

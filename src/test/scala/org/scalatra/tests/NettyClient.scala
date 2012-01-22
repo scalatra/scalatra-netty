@@ -8,13 +8,14 @@ import scalax.io.{Codec => Codecx, Resource}
 import collection.JavaConversions._
 import java.net.URI
 import rl.MapQueryString
-import io.Codec
+import scala.io.Codec
 import org.jboss.netty.handler.codec.http2.HttpHeaders.Names
 import java.io.{File, InputStream}
 import com.ning.http.client._
-import eu.medsea.mimeutil.MimeUtil2
 import util.{FileCharset, Mimes}
 import java.lang.Throwable
+import scalaz._
+import Scalaz._
 
 object StringHttpMethod {
   val GET = "GET"
@@ -32,7 +33,6 @@ abstract class ClientResponse {
   
   def status: ResponseStatus
   def contentType: String  
-  def charset: Charset 
   def inputStream: InputStream
   def cookies: Map[String, org.scalatra.HttpCookie]
   def headers: Map[String, String] 
@@ -43,9 +43,18 @@ abstract class ClientResponse {
   def statusCode = status.code
   def statusText = status.line
   def body = {
-    if (_body == null) _body = Resource.fromInputStream(inputStream).slurpString(Codecx(charset))
+    if (_body == null) _body = Resource.fromInputStream(inputStream).slurpString(Codecx(nioCharset))
     _body
   }
+
+  private def nioCharset = charset some Charset.forName none Codec.UTF8
+  def mediaType: Option[String] = headers.get("Content-Type") map { _.split(";")(0) }
+
+  def charset: Option[String] =
+    for {
+      ct <- headers.get("Content-Type")
+      charset <- ct.split(";").drop(1).headOption
+    } yield { charset.toUpperCase.replace("CHARSET=", "").trim }
 } 
 
 class NettyClient(val host: String, val port: Int) extends Client {
@@ -145,15 +154,12 @@ class NettyClient(val host: String, val port: Int) extends Client {
 
     val contentType = response.getContentType
 
-    val charset = NettyClient.this.charset
-
     val inputStream = response.getResponseBodyAsStream
 
     val uri = response.getUri    
   }
   
   private def async = new AsyncCompletionHandler[ClientResponse] {
-
 
     override def onThrowable(t: Throwable) {
       t.printStackTrace()
