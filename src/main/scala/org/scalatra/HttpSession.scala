@@ -1,10 +1,12 @@
 package org.scalatra
 
 import collection.mutable
-import collection.{GenTraversableOnce, MapProxyLike}
+import collection.{GenTraversableOnce}
 import collection.JavaConversions._
 import com.google.common.collect.MapMaker
 import java.security.SecureRandom
+import akka.util.Duration
+import mutable.ConcurrentMap
 
 object GenerateId {
   def apply(): String = {
@@ -22,22 +24,15 @@ object GenerateId {
 
 trait HttpSessionMeta[SessionType <: HttpSession] {
   def empty: SessionType
+  def emptyWithId(sessionId: String): SessionType
 }
 
 
-trait HttpSession extends mutable.ConcurrentMap[String, Any] with mutable.MapLike[String, Any, HttpSession] {
+trait HttpSession extends mutable.Map[String, Any] with mutable.MapLike[String, Any, HttpSession] {
   protected implicit def map2gmap(mmap: scala.collection.Map[String, Any]) = new MapMaker().makeMap[String, Any]() ++= mmap
 //  protected implicit def mmap2gmap(mmap: mutable.Map[String, Any]) = new MapMaker().makeMap[String, Any]() ++= mmap
 
-  protected def self: mutable.ConcurrentMap[String, Any]
-
-  def putIfAbsent(k: String, v: Any) = self.putIfAbsent(k, v)
-
-  def remove(k: String, v: Any) = self.remove(k, v)
-
-  def replace(k: String, oldvalue: Any, newvalue: Any) = self.replace(k, oldvalue, newvalue)
-
-  def replace(k: String, v: Any) = self.replace(k, v)
+  protected def self: mutable.Map[String, Any]
 
   override def get(key: String): Option[Any] = self.get(key)
   override def iterator: Iterator[(String, Any)] = self.iterator
@@ -59,10 +54,16 @@ trait HttpSession extends mutable.ConcurrentMap[String, Any] with mutable.MapLik
   override def addString(Any: StringBuilder, start: String, sep: String, end: String): StringBuilder =
     self.addString(Any, start, sep, end)
 
-  val id = GenerateId()
+  def id: String
 
-  protected def newSession(newSelf: mutable.ConcurrentMap[String, Any]): HttpSession =
-      new HttpSession { val self = newSelf }
+  protected def newSession(newSelf: mutable.ConcurrentMap[String, Any]): HttpSession = {
+    val cid = id
+    new HttpSession { 
+      val self = newSelf
+
+      val id = cid
+    }
+  }
 
 
   override def repr = this
@@ -77,11 +78,15 @@ trait HttpSession extends mutable.ConcurrentMap[String, Any] with mutable.MapLik
 
   override def += (kv: (String, Any)) = { self += kv ; this }
   override def -= (key: String) = { self -= key ; this }
-
 }
 
 object InMemorySession extends HttpSessionMeta[InMemorySession] {
   private val factory = new MapMaker()
   def empty = new InMemorySession(factory.makeMap[String, Any])
+  
+  def emptyWithId(sessionId: String) = new InMemorySession(factory.makeMap[String, Any](), sessionId)
 }
-class InMemorySession(protected val self: mutable.ConcurrentMap[String, Any]) extends HttpSession
+class InMemorySession(protected val self: mutable.ConcurrentMap[String, Any], val id: String = GenerateId()) extends HttpSession {
+  override protected def newSession(newSelf: ConcurrentMap[String, Any]): InMemorySession =
+    new InMemorySession(newSelf, id)
+}

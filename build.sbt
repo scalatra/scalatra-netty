@@ -27,11 +27,13 @@ libraryDependencies ++= Seq(
   "org.scala-tools.time" %% "time" % "0.5",
   "com.github.scala-incubator.io" %% "scala-io-core" % "0.3.0",
   "com.github.scala-incubator.io" %% "scala-io-file" % "0.3.0",
+  "com.typesafe.akka" % "akka-actor" % "2.0-M2",
   "com.typesafe.akka" % "akka-kernel" % "2.0-M2" % "provided;runtime",
   "org.jboss.netty" % "netty" % "3.2.7.Final",
   "org.scalaz" %% "scalaz-core" % "6.0.3",
   "com.google.guava" % "guava" % "10.0.1",
-  "org.specs2" %% "specs2" % "1.7.1" % "test"
+  "org.specs2" %% "specs2" % "1.7.1" % "test",
+  "org.scala-tools.testing" %% "scalacheck" % "1.9" % "test"
 )
 
 ivyXML := <dependencies>

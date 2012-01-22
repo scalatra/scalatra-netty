@@ -7,7 +7,8 @@ import scalaz._
 import Scalaz._
 import com.weiglewilczek.slf4s.Logging
 import util.PathManipulationOps
-import java.util.Locale
+import akka.util.duration._
+import akka.util.Duration
 
 object AppContext {
   val Production = "production".intern
@@ -63,7 +64,8 @@ trait AppContext extends Logging {
   def isEnvironment(env: String) = mode equalsIgnoreCase env
 
   var sessionIdKey = "JSESSIONID"
-  
+  var sessionTimeout: Duration = 20.minutes
+
   def get(key: String) = attributes.get(key)
   def apply(key: String) = attributes(key)
   def update(key: String, value: Any) = attributes(key) = value

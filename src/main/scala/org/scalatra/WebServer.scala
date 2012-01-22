@@ -25,7 +25,12 @@ case class PublicDirectory(path: Path, cacheFiles: Boolean = true) extends Serve
 case class TempDirectory(path: Path) extends ServerCapability
 case class DataDirectory(path: Path) extends ServerCapability
 
-case class ServerInfo(name: String, version: String = Version.version, port: Int = 8765, base: String = "/", capabilities: Seq[ServerCapability] = Seq.empty) {
+case class ServerInfo(
+              name: String,
+              version: String = Version.version,
+              port: Int = 8765,
+              base: String = "/",
+              capabilities: Seq[ServerCapability] = Seq.empty) {
   
   val publicDirectory = (capabilities find {
     case _: PublicDirectory => true

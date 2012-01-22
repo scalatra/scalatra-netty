@@ -2,10 +2,9 @@ package org.scalatra
 package netty
 
 import org.jboss.netty.channel.ChannelHandler.Sharable
-import org.jboss.netty.channel.{MessageEvent, ChannelHandlerContext}
-import scala.util.control.Exception._
 import scalaz._
 import Scalaz._
+import org.jboss.netty.channel.{ChannelStateEvent, MessageEvent, ChannelHandlerContext}
 
 /**
  * This handler is shared across the entire server, providing application level settings
@@ -21,7 +20,7 @@ class ScalatraApplicationHandler(implicit val appContext: AppContext) extends Sc
         appContext.application(req) match {
           case Some(app: ScalatraApp with SessionSupport) => {
             val current = req.cookies get appContext.sessionIdKey flatMap sessions.get
-            app.session_=(current | sessions.newSession)
+            app.session = current | sessions.newSession
             if (current.isEmpty) req.cookies += appContext.sessionIdKey -> app.session.id
           }
           case _ =>
