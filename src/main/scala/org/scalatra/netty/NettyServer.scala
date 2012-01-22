@@ -50,6 +50,7 @@ case class NettyServer(info: ServerInfo) extends WebServer {
   }
 
   onStop {
+    appContext.applications.valuesIterator foreach (_.mounted.destroy())
     NettyServer.allChannels.close().awaitUninterruptibly()
     bootstrap.releaseExternalResources()
     workerThreadPool.shutdown()

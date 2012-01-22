@@ -5,7 +5,6 @@ import collection.{GenTraversableOnce}
 import collection.JavaConversions._
 import com.google.common.collect.MapMaker
 import java.security.SecureRandom
-import akka.util.Duration
 import mutable.ConcurrentMap
 
 object GenerateId {
@@ -32,7 +31,7 @@ trait HttpSession extends mutable.Map[String, Any] with mutable.MapLike[String, 
   protected implicit def map2gmap(mmap: scala.collection.Map[String, Any]) = new MapMaker().makeMap[String, Any]() ++= mmap
 //  protected implicit def mmap2gmap(mmap: mutable.Map[String, Any]) = new MapMaker().makeMap[String, Any]() ++= mmap
 
-  protected def self: mutable.Map[String, Any]
+  protected def self: mutable.ConcurrentMap[String, Any]
 
   override def get(key: String): Option[Any] = self.get(key)
   override def iterator: Iterator[(String, Any)] = self.iterator
@@ -76,8 +75,14 @@ trait HttpSession extends mutable.Map[String, Any] with mutable.MapLike[String, 
     newSession(self.+(elem1, elem2, elems: _*))
   override def ++[B1 >: Any](xs: GenTraversableOnce[(String, B1)]): HttpSession = newSession(self ++ xs)
 
-  override def += (kv: (String, Any)) = { self += kv ; this }
-  override def -= (key: String) = { self -= key ; this }
+  override def += (kv: (String, Any)) = {
+    self += kv
+    this 
+  }
+  override def -= (key: String) = {
+    self -= key
+    this
+  }
 }
 
 object InMemorySession extends HttpSessionMeta[InMemorySession] {

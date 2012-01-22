@@ -3,6 +3,8 @@ package tests
 
 import xml.Text
 import java.nio.charset.Charset
+import actors.{TIMEOUT, Actor}
+import com.ning.http.client.{Request, PerRequestConfig, AsyncHttpClient}
 
 class ContentTypeTestApp extends ScalatraApp {
   get("/json") {
@@ -32,40 +34,41 @@ class ContentTypeTestApp extends ScalatraApp {
     Text("test")
   }
 
-//  import Actor._
-//  val conductor = actor {
-//    loop {
-//      reactWithin(10000) {
-//        case 1 =>
-//          val firstSender = sender
-//          reactWithin(10000) {
-//            case 2 =>
-//              firstSender ! 1
-//            case 'exit =>
-//              exit()
-//            case TIMEOUT =>
-//              firstSender ! "timed out"
-//            }
-//        case 'exit =>
-//          exit()
-//        case TIMEOUT =>
-//          sender ! "timed out"
-//      }
-//    }
-//  }
+  import Actor._
 
-//  get("/concurrent/1") {
-//    contentType = "1"
-//    // Wait for second request to complete
-//    (conductor !! 1)()
-//  }
-//
-//  get("/concurrent/2") {
-//    contentType = "2"
-//    // Let first request complete
-//    conductor ! 2
-//  }
-//
+  val conductor = actor {
+    loop {
+      reactWithin(10000) {
+        case 1 =>
+          val firstSender = sender
+          reactWithin(10000) {
+            case 2 =>
+              firstSender ! 1
+            case 'exit =>
+              exit()
+            case TIMEOUT =>
+              firstSender ! "timed out"
+            }
+        case 'exit =>
+          exit()
+        case TIMEOUT =>
+          sender ! "timed out"
+      }
+    }
+  }
+
+  get("/concurrent/1") {
+    contentType = "1"
+    // Wait for second request to complete
+    (conductor !! 1)()
+  }
+
+  get("/concurrent/2") {
+    contentType = "2"
+    // Let first request complete
+    conductor ! 2
+  }
+
   get("/default-charset") {
     contentType = "text/xml"
   }
@@ -74,7 +77,14 @@ class ContentTypeTestApp extends ScalatraApp {
     params("echo")
   }
 
+  override def initialize(config: AppContext) = {
+    super.initialize(config)
+    conductor.start()
+  }
 
+  override def destroy() {
+    conductor ! 'exit
+  }
 }
 
 class ContentTypeSpec extends ScalatraSpec {
@@ -89,6 +99,7 @@ class ContentTypeSpec extends ScalatraSpec {
       "contentType of a text element defaults to text/html" ! textElementDefaultsHtml ^
       "implicit content type does not override charset" ! noImplicitCharsetOverride ^
       "charset is set to default when only content type is explicitly set" ! fallsbackDefaultCharset ^
+      "contentType is threadsafe" ! contentTypeThreadSafety ^
     end
 
   def jsonContentType = {
@@ -129,57 +140,33 @@ class ContentTypeSpec extends ScalatraSpec {
 
   def fallsbackDefaultCharset = {
     get("/default-charset") {
-      response.charset must beSome("UTF-8")
+      (response.charset must beSome("UTF-8"))
     }
   }
 
-
-
-/*
-  test("contentType is threadsafe") {
-    import Actor._
-
-    def doRequest = actor {
-      loop {
-        react {
-          case i: Int =>
-            val req = new HttpTester
-            req.setVersion("HTTP/1.0")
-            req.setMethod("GET")
-            req.setURI("/concurrent/"+i)
-            // Execute in own thread in servlet with LocalConnector
-            val conn = tester.createLocalConnector()
-            val res = new HttpTester
-            res.parse(tester.getResponses(req.generate(), conn))
-            sender ! (i, res.mediaType)
-            exit()
-        }
-      }
-    }
-
-    val futures = for (i <- 1 to 2) yield { doRequest !! i }
-    for (future <- futures) {
-      val result = future() match {
-        case (i, mediaType) => mediaType should be (Some(i.toString))
-      }
-    }
+  def contentTypeThreadSafety = {
+    pending
+//    import Actor._
+//
+//    def doRequest = actor {
+//      loop {
+//        react {
+//          case i: Int =>
+//            val http = new AsyncHttpClient
+//            val res = new NettyClientResponse(http.prepareGet("/concurrent/" + i).execute().get())
+//
+//            sender ! (i, res.mediaType)
+//            http.close()
+//            exit()
+//        }
+//      }
+//    }
+//
+//    val futures = for (i <- 1 to 2) yield { doRequest !! i }
+//    val result = for (future <- futures) yield (future() match {
+//        case (i: Int, mediaType: Option[_]) => mediaType must beSome(i.toString)
+//      })
+//    result reduce (_ and _)
   }
 
-  test("does not override request character encoding when explicitly set") {
-    val charset = "iso-8859-5"
-    val message = "Здравствуйте!"
-
-    val req = new HttpTester("iso-8859-1")
-    req.setVersion("HTTP/1.0")
-    req.setMethod("POST")
-    req.setURI("/echo")
-    req.setHeader("Content-Type", "application/x-www-form-urlencoded; charset="+charset)
-    req.setContent("echo="+URLEncoder.encode(message, charset))
-    println(req.generate())
-
-    val res = new HttpTester("iso-8859-1")
-    res.parse(tester.getResponses(req.generate()))
-    println(res.getCharacterEncoding)
-    res.getContent should equal(message)
-  }*/
 }

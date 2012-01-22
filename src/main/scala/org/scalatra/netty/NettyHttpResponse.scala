@@ -44,7 +44,11 @@ class NettyHttpResponse(request: NettyHttpRequest, connection: ChannelHandlerCon
         }
       }
       request.cookies.responseCookies foreach { cookie => underlying.addHeader(Names.SET_COOKIE, cookie.toCookieString) }
-      underlying.setContent(outputStream.buffer())
+      val content = outputStream.buffer()
+      val theContent = if (content.readableBytes() > 0) {
+        content
+      } else ChannelBuffers.copiedBuffer("\n", charset)
+      underlying.setContent(theContent)
       val fut = connection.getChannel.write(underlying)
       if(!HttpHeaders.isKeepAlive(underlying) || !chunked) fut.addListener(ChannelFutureListener.CLOSE)
     }

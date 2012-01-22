@@ -55,7 +55,24 @@ abstract class ClientResponse {
       ct <- headers.get("Content-Type")
       charset <- ct.split(";").drop(1).headOption
     } yield { charset.toUpperCase.replace("CHARSET=", "").trim }
-} 
+}
+
+class NettyClientResponse(response: Response) extends ClientResponse {
+  val cookies = (response.getCookies map { cookie =>
+    val cko = CookieOptions(cookie.getDomain, cookie.getPath, cookie.getMaxAge)
+    cookie.getName -> org.scalatra.Cookie(cookie.getName, cookie.getValue)(cko)
+  }).toMap
+
+  val headers = (response.getHeaders.keySet() map { k => k -> response.getHeaders(k).mkString("; ")}).toMap
+
+  val status = ResponseStatus(response.getStatusCode, response.getStatusText)
+
+  val contentType = response.getContentType
+
+  val inputStream = response.getResponseBodyAsStream
+
+  val uri = response.getUri
+}
 
 class NettyClient(val host: String, val port: Int) extends Client {
 
@@ -100,7 +117,7 @@ class NettyClient(val host: String, val port: Int) extends Client {
   }
   
   private def addHeaders(headers: Map[String, String])(req: AsyncHttpClient#BoundRequestBuilder) = {
-    headers foreach { case (k, v) => req.addHeader(k, v) }
+    headers foreach { case (k, v) => req.setHeader(k, v) }
     req
   }
   
@@ -142,22 +159,7 @@ class NettyClient(val host: String, val port: Int) extends Client {
     withResponse(res)(f)
   }
   
-  private class NettyClientResponse(response: Response) extends ClientResponse {
-    val cookies = (response.getCookies map { cookie =>
-      val cko = CookieOptions(cookie.getDomain, cookie.getPath, cookie.getMaxAge)
-      cookie.getName -> org.scalatra.Cookie(cookie.getName, cookie.getValue)(cko)
-    }).toMap
-    
-    val headers = (response.getHeaders.keySet() map { k => k -> response.getHeaders(k).mkString("; ")}).toMap
 
-    val status = ResponseStatus(response.getStatusCode, response.getStatusText)
-
-    val contentType = response.getContentType
-
-    val inputStream = response.getResponseBodyAsStream
-
-    val uri = response.getUri    
-  }
   
   private def async = new AsyncCompletionHandler[ClientResponse] {
 

@@ -30,5 +30,7 @@ class ScalatraPipelineFactory(implicit val applicationContext: AppContext) exten
     pipe
   }
 
-  def stop() = applicationHandler.stop()
+  def stop() = {
+    applicationHandler.stop()
+  }
 }
