@@ -88,7 +88,7 @@ class ContentTypeSpec extends ScalatraSpec {
       "contentType of a byte array defaults to application/octet-stream" ! bytesDefault ^
       "contentType of a text element defaults to text/html" ! textElementDefaultsHtml ^
       "implicit content type does not override charset" ! noImplicitCharsetOverride ^
-//      "charset is set to default when only content type is explicitly set" ! fallsbackDefaultCharset ^
+      "charset is set to default when only content type is explicitly set" ! fallsbackDefaultCharset ^
     end
 
   def jsonContentType = {
@@ -132,6 +132,8 @@ class ContentTypeSpec extends ScalatraSpec {
       response.charset must beSome("UTF-8")
     }
   }
+
+
 
 /*
   test("contentType is threadsafe") {
