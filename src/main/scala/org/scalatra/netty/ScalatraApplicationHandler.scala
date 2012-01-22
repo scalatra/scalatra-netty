@@ -33,4 +33,6 @@ class ScalatraApplicationHandler(implicit val appContext: AppContext) extends Sc
     }
   }
 
+  def stop() = sessions.stop()
+
 }

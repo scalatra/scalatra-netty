@@ -61,7 +61,7 @@ class InMemorySessionStoreSpec extends Specification with ScalaCheck { def is =
 
     def handlesLoad = this {
       val sessions = (1 to 500) map { _ => GenerateId()}
-      val values = for { k <- Gen.alphaStr.filter(_.nonBlank) if k.nonBlank; v <- Gen.alphaStr.filter(_.nonBlank) } yield k -> v
+      val values = for { k <- Gen.alphaStr.filter(_.nonBlank); v <- Gen.alphaStr.filter(_.nonBlank) } yield k -> v
       sessions.par map { sessionId =>
         store.newSessionWithId(sessionId)
         store.get(sessionId) must beSome[HttpSession] and {

@@ -29,4 +29,6 @@ class ScalatraPipelineFactory(implicit val applicationContext: AppContext) exten
     pipe.addLast("handler", new ScalatraRequestHandler)
     pipe
   }
+
+  def stop() = applicationHandler.stop()
 }

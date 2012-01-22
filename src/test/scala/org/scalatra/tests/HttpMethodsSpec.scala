@@ -89,7 +89,7 @@ class HttpMethodsSpec extends ScalatraSpec {
   
   mount(new HttpMethodsApp)
 
-  def is = 
+  def is =
     "The HttpMethod support should" ^ 
       "allow get requests with path params" ! getHelloParam ^
       "allow get requests with query params" ! getQuery ^

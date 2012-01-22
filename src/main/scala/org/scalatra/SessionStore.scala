@@ -32,7 +32,7 @@ object InMemorySessionStore {
     private val lastAccessed = new AtomicLong(System.currentTimeMillis)
     def isExpired  = lastAccessed.get < (System.currentTimeMillis - expiration.toMillis)
     def expire() = lastAccessed.set(0L)
-    def tickAccess() = lastAccessed.set(System.currentTimeMillis())
+    def tickAccess() = lastAccessed.set(System.currentTimeMillis)
   }
   
 }
