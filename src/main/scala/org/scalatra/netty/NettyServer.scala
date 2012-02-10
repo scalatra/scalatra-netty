@@ -10,7 +10,7 @@ import org.jboss.netty.handler.codec.http2.{DiskFileUpload, DiskAttribute}
 import scalaz._
 import Scalaz._
 
-object NettyServer {
+object NettyServer extends WebServerFactory {
   val DefaultServerName = "ScalatraNettyHttpServer"
   
   def apply(capabilities: ServerCapability*): WebServer = {

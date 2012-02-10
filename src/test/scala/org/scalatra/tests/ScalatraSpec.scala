@@ -29,8 +29,8 @@ trait ScalatraSpec extends Specification with Client {
   }
 
   private def stopScalatra = {
-    serverClient.stop()
-    server.stop
+    ignoring(classOf[Throwable]) { serverClient.stop() }
+    ignoring(classOf[Throwable]) { server.stop }
   }
 
   override def map(fs: => Fragments) = Step(startScalatra) ^ super.map(fs) ^ Step(stopScalatra)

@@ -7,7 +7,6 @@ import scalaz.Scalaz._
 import org.jboss.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
 import org.jboss.netty.buffer.{ChannelBuffers, ChannelBufferOutputStream}
 import org.jboss.netty.handler.codec.http2.{HttpHeaders, DefaultHttpResponse, HttpResponseStatus, HttpVersion => JHttpVersion}
-import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
 class NettyHttpResponse(request: NettyHttpRequest, connection: ChannelHandlerContext) extends HttpResponse {
@@ -45,12 +44,11 @@ class NettyHttpResponse(request: NettyHttpRequest, connection: ChannelHandlerCon
       }
       request.cookies.responseCookies foreach { cookie => underlying.addHeader(Names.SET_COOKIE, cookie.toCookieString) }
       val content = outputStream.buffer()
-      val theContent = if (content.readableBytes() > 0) {
-        content
-      } else ChannelBuffers.copiedBuffer("\n", charset)
-      underlying.setContent(theContent)
+      if (content.readableBytes() < 1) content.writeByte(0x1A)
+      underlying.setContent(content)
       val fut = connection.getChannel.write(underlying)
       if(!HttpHeaders.isKeepAlive(underlying) || !chunked) fut.addListener(ChannelFutureListener.CLOSE)
+
     }
   }
 

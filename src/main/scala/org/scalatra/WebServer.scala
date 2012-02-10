@@ -68,6 +68,21 @@ case class ServerInfo(
   }) map (_.asInstanceOf[ContentCompression])
 }
 
+
+trait WebServerFactory {
+
+  def DefaultServerName: String
+
+  def apply(capabilities: ServerCapability*): WebServer
+
+  def apply(port: Int,  capabilities: ServerCapability*): WebServer
+
+  def apply(base: String, capabilities: ServerCapability*): WebServer
+
+  def apply(port: Int, base: String, capabilities: ServerCapability*): WebServer
+
+}
+
 object WebServer {
   val DefaultPath = "/"
   val DefaultPathName = ""
