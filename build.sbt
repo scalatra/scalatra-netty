@@ -11,7 +11,8 @@ name := "scalatra-netty"
 resolvers ++= Seq(
   "ScalaTools Snapshots nexus" at "http://nexus.scala-tools.org/content/repositories/snapshots",
   "repository.jboss.org" at "https://repository.jboss.org/nexus/content/repositories/releases/",
-  "Akka Repository" at "http://akka.io/repository"
+  "Akka Repository" at "http://akka.io/repository",
+  "Scala Tools" at "https://oss.sonatype.org/content/repositories/snapshots"
 )
 
 libraryDependencies ++= Seq(
@@ -21,6 +22,7 @@ libraryDependencies ++= Seq(
   "com.ning"                          % "async-http-client" % "1.7.0",
   "com.github.scala-incubator.io"    %% "scala-io-core"     % "0.3.0",
   "com.github.scala-incubator.io"    %% "scala-io-file"     % "0.3.0",
+  "io.backchat.http"                 %% "http-parsers"      % "0.3.2-SNAPSHOT",
   "com.typesafe.akka"                 % "akka-actor"        % "2.0-M4",
   "org.parboiled"                     % "parboiled-scala"   % "1.0.2",
   "io.netty"                          % "netty"             % "3.3.1.Final",
