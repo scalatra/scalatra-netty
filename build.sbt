@@ -27,7 +27,8 @@ libraryDependencies ++= Seq(
   "org.scalaz"                       %% "scalaz-core"       % "6.0.4",
   "com.google.guava"                  % "guava"             % "10.0.1",
   "org.specs2"                       %% "specs2"            % "1.7.1"             % "test",
-  "org.scala-tools.testing"          %% "scalacheck"        % "1.9"               % "test"
+  "org.scala-tools.testing"          %% "scalacheck"        % "1.9"               % "test",
+  "junit"                             % "junit"             % "4.10"              % "test"
 )
 
 ivyXML := <dependencies>
