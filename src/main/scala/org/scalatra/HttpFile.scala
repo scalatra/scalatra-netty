@@ -2,7 +2,7 @@ package org.scalatra
 
 import java.io.{InputStream, File}
 import java.nio.charset.Charset
-import io.Codec
+import scala.io.Codec
 
 
 trait HttpFile {

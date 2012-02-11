@@ -1,7 +1,7 @@
 package org.scalatra
 package netty
 
-import io.Codec
+import scala.io.Codec
 import org.jboss.netty.handler.codec.http2.HttpHeaders.Names
 import scalaz.Scalaz._
 import org.jboss.netty.channel.{ChannelFutureListener, ChannelHandlerContext}

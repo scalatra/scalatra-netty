@@ -37,7 +37,7 @@ ivyXML := <dependencies>
     <exclude module="log4j" />
     <exclude module="slf4j-log4j12" />
     <exclude module="slf4j-api-1.6.0"  />
-    <exclude module="org.jboss.netty" />
+    <exclude org="org.jboss.netty" />
   </dependencies>
 
 seq(VersionGenPlugin.allSettings :_*)

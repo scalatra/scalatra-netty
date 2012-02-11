@@ -1,7 +1,7 @@
 package org.scalatra
 package netty
 
-import io.Codec
+import scala.io.Codec
 import org.jboss.netty.channel._
 import util.MultiMap
 import collection.JavaConversions._
